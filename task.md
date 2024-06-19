@@ -18,7 +18,7 @@ Create a Management System for a news portal. The system should support the foll
 
 - Show a specific article
 
-Bonus Task:
+Bonus Operation:
 - Show (up to) 10 latest articles of any topic (latest = article was created within the last hour)
 
 The domain objects have the following attributes:
