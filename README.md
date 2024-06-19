@@ -6,7 +6,7 @@ What you need is:
 - a frontend that shows topics and articles
 
  At a later step more complex tasks such as:
-  - search
-  - authorisation
+  - search / filters
+  - user management / autentication and authorisation
 
 In this repo, we start with the backend implementation of a simple news management system.
