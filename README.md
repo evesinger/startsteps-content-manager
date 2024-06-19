@@ -1,22 +1,21 @@
 # startsteps
+Create a Management System for a news portal. The system should support the following operations:
 
-Write a Management System for a news portal. The system should support the following operations:
+- Create a topic
 
-Create a topic
+- Delete a topic
 
-Delete a topic
+- List all topics
 
-List all topics
+- Show a specific topic
 
-Show a specific topic
+- Create an article for a topic
 
-Create an article for a topic
+- Delete an article
 
-Delete an article
+- List all articles from a topic
 
-List all articles from a topic
-
-Show a specific article
+- Show a specific article
 
 The domain objects have the following attributes:
 
