@@ -8,5 +8,7 @@ What you need is:
  At a later step more complex tasks such as:
   - search / filters
   - user management / autentication and authorisation
+  - caching
+  - concurrency
 
 In this repo, we start with the backend implementation of a simple news management system.
