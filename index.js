@@ -7,7 +7,7 @@ const app = express();
 app.use(express.json()); // configuration 
 
 // Define the port number the server will listen on
-const port = 3000;
+const port = 3001;
 
 // Define a route handler for the root URL ('/')
 app.get('/', (req, res) => {
