@@ -1,0 +1,12 @@
+{
+  "name": "startsteps-newsapp-be",
+  "version": "1.0.0",
+  "description": "Imagine you want to build a news web app that shows articles by certain topics. What you need is: - a backend that manages articles and topics - a frontend that shows topics and articles",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
