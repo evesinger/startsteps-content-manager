@@ -21,4 +21,5 @@ app.use('/latest-articles', latestarticleController); // Handles latest articles
 // Start the server
 app.listen(port, () => console.log(`Server is running at: http://127.0.0.1:${port}`));
 
-export default app;
+export default app
+ 
