@@ -1,22 +1,24 @@
-import { IArticle } from './Interfaces';
+import { hardCodedDate } from "./dummyDataBase";
+import validateArticleData from "./helpers";
 
-export class Article implements IArticle {
-  static articleCount: number = 1;
-
-  // Properties
+export class Article {
+  static articleCounter: number = 1;
   id: number;
   title: string;
   author: string;
   text: string;
-  topicId: number;
-  createdAt: string;
+  createdAt: Date;
 
-  constructor(title: string, author: string, text: string, topicId: number, createdAt: string = new Date().toISOString()) {
-    this.id = Article.articleCount++; // Assigning a unique id to each article
+  constructor(title: string, author: string, text: string, createdAt: Date) {
+    this.id = Article.articleCounter++;
     this.title = title;
     this.author = author;
     this.text = text;
-    this.topicId = topicId;
-    this.createdAt = createdAt;
+    this.createdAt = hardCodedDate // *EDIT: changed to hardCodedDate
+  }
+// *ADDED: static function including helper function 
+  static create(title: string, author: string, text: string, createdAt:Date = hardCodedDate): Article {
+    validateArticleData(title, author, text, createdAt);  
+    return new Article(title!, author!, text!, createdAt);
   }
 }

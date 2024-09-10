@@ -1,16 +1,15 @@
-import express, { Request, Response } from 'express';
+/*import express, { Request, Response } from 'express';
 import { dummyDataBase } from './dummyDataBase';
-import { IArticle, ITopic } from './Interfaces';
 
 const router = express.Router();
 
 // Show up to 10 latest articles created within the last hour
-router.get('/latest', (req: Request, res: Response) => {
+router.get('/', (req: Request, res: Response) => {
   const oneHourAgo = new Date(Date.now() - 3600 * 1000);
-  let recentArticles: IArticle[] = [];
+  let recentArticles = [];
 
-  dummyDataBase.topics.forEach((topic: ITopic) => {
-    topic.articles.forEach((article: IArticle) => {
+  dummyDataBase.topics.forEach((topic) => {
+    topic.articles.forEach((article) => {
       if (new Date(article.createdAt) >= oneHourAgo) {
         recentArticles.push(article);
       }
@@ -23,3 +22,4 @@ router.get('/latest', (req: Request, res: Response) => {
 });
 
 export default router;
+*/

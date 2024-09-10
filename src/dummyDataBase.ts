@@ -1,31 +1,46 @@
 import { Topic } from './Topic';
 import { Article } from './Article';
-import { IArticle } from './Interfaces';
 
-// Predefined topics
+
 const topics: Topic[] = [
   new Topic("Technology"),
   new Topic("Health"),
   new Topic("Sports"),
+  new Topic ("Beauty"), 
+  new Topic ("Cars"),
+  new Topic ("Politics")
 ];
 
-// Predefined articles and associate them with topics by topicId
+// ADDED: Hardcoded date for article creation
+export const hardCodedDate = new Date('2024-09-01T00:00:00Z');
+
+// EDITED: Predefined articles, no articleid dependency on topic
 const articles: Article[] = [
-  new Article("Test Title 1", "John Doe", "This is a test text number 1.", topics[0].id),
-  new Article("Test Title 2", "Jane Doe", "This is a test text number 2.", topics[0].id),
-  new Article("Test Title 3", "Axel Springer", "This is a test text number 3.", topics[1].id),
-  new Article("Test Title 4", "Frank Sinatra", "This is a test text number 4.", topics[1].id),
-  new Article("Test Title 5", "Dalai Lama", "This is a test text number 5.", topics[2].id),
-  new Article("Test Title 6", "Michael Jackson", "This is a test text number 6.", topics[2].id),
+  Article.create("Test Title 1","John Doe", "This is a test text number 1", hardCodedDate ), // 0
+  Article.create("Test Title 2", "Jane Doe", "This is a test text number 2.", hardCodedDate), // 1
+  Article.create("Test Title 3", "Axel Springer", "This is a test text number 3.", hardCodedDate), // 2
+  Article.create("Test Title 4", "Frank Sinatra", "This is a test text number 4.", hardCodedDate),// 3
+  Article.create("Test Title 5", "Dalai Lama", "This is a test text number 5.", hardCodedDate), // 4
+  Article.create("Test Title 6", "Michael Jackson", "This is a test text number 6.",hardCodedDate), // 5
+  Article.create("Test Title 7", "Celion Dion", "This is a test text number 7", hardCodedDate), // 6
+  Article.create("Test Title 8", "Lorem Ipsum", "This is a test text number 8", hardCodedDate), // 7
+  Article.create("Test title 9", "Billi Doe", "This is a test text number 9", hardCodedDate),// 8
+  Article.create("Test title 10", "Bobby Doe", "This is a test text number 10", hardCodedDate) // 9
 ];
 
-// Associate articles with their respective topics
-articles.forEach(article => {
-  const topic = topics.find(t => t.id === article.topicId);
-  if (topic) {
-    topic.addArticle(article); // Use addArticle method of Topic class
-  }
-});
+// ADDED: Connecting articles with their rtopics by article IDs
+topics[0].addArticle(articles[0].id); 
+topics[0].addArticle(articles[1].id); 
+topics[1].addArticle(articles[2].id); 
+topics[1].addArticle(articles[3].id); 
+topics[2].addArticle(articles[4].id); 
+topics[2].addArticle(articles[5].id); 
+topics[3].addArticle(articles[6].id); 
+topics[3].addArticle(articles[7].id); 
+topics[4].addArticle(articles[8].id); 
+topics[5].addArticle(articles[9].id); 
 
 export const dummyDataBase = { topics, articles };
+
+
 
