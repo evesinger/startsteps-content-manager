@@ -5,16 +5,8 @@ import { Topic } from './Topic';
 
 const router = express.Router();
 
-/* TOPIC end-points:
-- Create a new topic
-- Delete a topic
-- List all topics
-- Show a specific topic
-- Create an article for a specific topic
-*/
-
 //ADDED: 1. Create a new topic
-router.post('/topics', (req: Request, res: Response) => {
+router.post('/', (req: Request, res: Response) => {
   const { title } = req.body;
 
   if (!title) {
@@ -33,7 +25,7 @@ router.post('/topics', (req: Request, res: Response) => {
 });
 
 // ADDED: 2. Delete a topic
-router.delete('/topics/:topicId', (req: Request, res: Response) => {
+router.delete('/:topicId', (req: Request, res: Response) => {
   const topicId = parseInt(req.params.topicId, 10);
 
   if (isNaN(topicId)) {
@@ -51,7 +43,7 @@ router.delete('/topics/:topicId', (req: Request, res: Response) => {
 });
 
 // ADDED: 3. List all topics
-router.get('/topics', (req: Request, res: Response) => {
+router.get('/', (req: Request, res: Response) => {
   res.json(dummyDataBase.topics);
 });
 
@@ -72,14 +64,14 @@ router.get('/topics/:topicId', (req: Request, res: Response) => {
 });
 
 
-// 5. Get all articles for a specific topic
-router.get('/articles', (req: Request, res: Response) => {
-  const topicId = parseInt(req.query.topicId as string, 10);
+// 09.23 5. Get all articles for a specific topic 
+router.get('/:topicId/articles', (req: Request, res: Response) => {
+  const topicId = parseInt(req.params.topicId, 10);  // using path parameter instead of query parameter
 
-  // ADDED: checking if topicId is missing or not a valid number
   if (isNaN(topicId)) {
     return res.status(400).json({ error: "Invalid topicId. It must be a number." });
   }
+
   const topic = dummyDataBase.topics.find(t => t.id === topicId);
   
   if (!topic) {
@@ -87,14 +79,14 @@ router.get('/articles', (req: Request, res: Response) => {
   }
   const articles = topic.articleIds.map(id => 
     dummyDataBase.articles.find(article => article.id === id)
-  ).filter(article => article !== undefined); // Filter out undefined results
+  ).filter(article => article !== undefined); // filtering out undefined results
 
   res.json(articles);
 });
 
 
-// EDITED: 6. Create an article for a specific topic
-router.post('/:topicId/articles', (req: Request, res: Response) => {
+// 09.23 EDITED: Update a topic to an articles
+router.put('/:topicId', (req: Request, res: Response) => { //added put
   const topicId = parseInt(req.params.topicId, 10);
 
   if (isNaN(topicId)) {
@@ -108,16 +100,34 @@ router.post('/:topicId/articles', (req: Request, res: Response) => {
   }
 
   try {
-    const { title, author, text } = req.body;
+    const { articles } = req.body; // expecting a list of articles in the request body
     
-    const newArticle = Article.create(title, author,text, hardCodedDate);
 
-    dummyDataBase.articles.push(newArticle)
-    topic.addArticle(newArticle.id); 
+    if (!articles || !Array.isArray(articles)) { // making sure req body contains articles array
+      return res.status(400).json({ error: "Articles must be provided as an array." });
+    }
 
-    res.status(200).json(newArticle); 
-  } catch (error) {
-    if (error instanceof Error) {
+    articles.forEach(articleData => {
+      const { title, author, text } = articleData;
+      
+
+      let existingArticle = dummyDataBase.articles.find(article => //check if exist
+        article.title === title && article.author === author
+      );
+
+      if (!existingArticle) { // if not create a new one 
+        existingArticle = Article.create(title, author, text, hardCodedDate);
+        dummyDataBase.articles.push(existingArticle);
+      }
+
+      if (!topic.articleIds.includes(existingArticle.id)) { // if not added to topic already, add it
+        topic.addArticle(existingArticle.id);
+      }
+    });
+
+    res.status(200).json({ message: "Articles updated for the topic", topic });
+  } catch (error: any) {
+    if (error) {
       res.status(400).json({ error: error.message });
     } else {
       res.status(400).json({ error: "An unknown error occurred" });

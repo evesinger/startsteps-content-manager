@@ -4,16 +4,8 @@ import { dummyDataBase, hardCodedDate } from './dummyDataBase';
 
 const router = express.Router();
 
-/* ARTICLE end-points:
-- Delete an article
-- List all articles (optionally filtered by topicId)
-- Show a specific article by ID
-- EXTRA: Update an article by it's id 
-- Delete an article by it's id 
-*/
-
 // EDITED: ENDPOINT 1. Get all articles, optionally filtered by topicId
-router.get('/articles', (req: Request, res: Response) => {
+router.get('/', (req: Request, res: Response) => {
   const { topicId } = req.query;
 
 
@@ -41,7 +33,7 @@ const allArticles = dummyDataBase.articles;
 });
 
 // EDITED: ENDPOINT 2. Get a specific article by its articleID
-router.get('/articles/:articleId', (req: Request, res: Response) => {
+router.get('/:articleId', (req: Request, res: Response) => {
   const articleId = parseInt(req.params.articleId, 10);
 
   if (isNaN(articleId)) {
@@ -58,7 +50,7 @@ router.get('/articles/:articleId', (req: Request, res: Response) => {
 });
 
 // ENDPOINT 3. Create a new article without specifying a topic
-router.post('/articles', (req: Request, res: Response) => {
+router.post('/', (req: Request, res: Response) => {
   const { title, author, text } = req.body;
 
   if (!title || !author || !text) {
@@ -72,7 +64,7 @@ router.post('/articles', (req: Request, res: Response) => {
 });
 
 // ENDPOINT 4. Update an article by its ID
-router.put('/articles/:articleId', (req: Request, res: Response) => {
+router.put('/:articleId', (req: Request, res: Response) => {
   const articleId = parseInt(req.params.articleId, 10);
   const { title, author, text } = req.body;
 
@@ -94,7 +86,7 @@ router.put('/articles/:articleId', (req: Request, res: Response) => {
 });
 
 // EDITED: ENDPOINT 5 Delete an article by its ID
-router.delete('/articles/:articleId', (req: Request, res: Response) => {
+router.delete('/:articleId', (req: Request, res: Response) => {
   const articleId = parseInt(req.params.articleId, 10);
 
   if (isNaN(articleId)) {
@@ -107,15 +99,48 @@ router.delete('/articles/:articleId', (req: Request, res: Response) => {
     return res.status(404).json({ error: "Article not found" });
   }
 
-  // ADDED: remove the article from the global articles list
+  //ADDED: remove the article from the global articles list
   dummyDataBase.articles.splice(articleIndex, 1);
 
   //also remove this article from any topics that reference it
   for (const topic of dummyDataBase.topics) {
     topic.removeArticle(articleId);
   }
-
   res.status(204).send();
+
+  // 09.23 
+  router.get('/latest', (req: Request, res: Response) => {
+    const { topicId } = req.query;
+  
+    if (topicId !== undefined) {
+      const parsedTopicId = parseInt(topicId as string, 10);
+      if (isNaN(parsedTopicId)) {
+        return res.status(400).json({ error: "Invalid topicId. It must be a number." });
+      }
+  
+      const topic = dummyDataBase.topics.find(t => t.id === parsedTopicId);
+      if (!topic) {
+        return res.status(404).json({ error: 'Topic not found' });
+      }
+  
+      const articles = topic.articleIds
+        .map(id => dummyDataBase.articles.find(article => article.id === id))
+        .filter(article => article !== undefined)
+        .sort((a, b) => (a && b && a.createdAt > b.createdAt ? -1 : 1)); // Sort by date (newest first)
+  
+      return res.json(articles.slice(0, 5)); 
+    }
+  
+    const allArticles = dummyDataBase.articles
+      .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1)) // Sort by date (newest first)
+      .slice(0, 5); 
+  
+    res.json(allArticles);
+  });
+
+  
 });
+
+
 
 export default router;
