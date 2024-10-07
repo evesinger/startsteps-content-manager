@@ -2,11 +2,10 @@ export class Topic {
   static topicCounter: number = 1;
   id: number;
   title: string;
-  articleIds: number[]; // ADDED:  articleIds, storing references to article IDs
+  articleIds: number[]; 
 
-// ADDED: articleIds into constructor
   constructor(title: string) {
-    this.id = Topic.topicCounter++;
+    this.id = Topic.topicCounter++,
     this.title = title;
     this.articleIds = []; 
   }
@@ -19,3 +18,4 @@ export class Topic {
     this.articleIds = this.articleIds.filter(id => id !== articleId);
   }
 }
+

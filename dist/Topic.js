@@ -3,21 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Topic = void 0;
 class Topic {
     constructor(title) {
-        this.id = Topic.topicCounter++;
-        this.title = title;
-        this.articles = []; // Initialized as an empty array
+        this.id = Topic.topicCounter++,
+            this.title = title;
+        this.articleIds = [];
     }
-    // Method to add an article to the topic
-    addArticle(article) {
-        this.articles.push(article);
+    addArticle(articleId) {
+        this.articleIds.push(articleId);
     }
-    // Method to remove an article by article ID
     removeArticle(articleId) {
-        this.articles = this.articles.filter(article => article.id !== articleId);
-    }
-    // Method to get an article by its ID
-    getArticle(articleId) {
-        return this.articles.find(article => article.id === articleId);
+        this.articleIds = this.articleIds.filter(id => id !== articleId);
     }
 }
 exports.Topic = Topic;

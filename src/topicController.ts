@@ -1,11 +1,10 @@
 import express, { Request, Response } from 'express';
-import { dummyDataBase, hardCodedDate } from './dummyDataBase';
-import { Article } from './Article';
+import { dummyDataBase } from './dummyDataBase';
 import { Topic } from './Topic';
 
 const router = express.Router();
 
-//ADDED: 1. Create a new topic
+//ENDPOINT 1. Create a new topic
 router.post('/', (req: Request, res: Response) => {
   const { title } = req.body;
 
@@ -17,39 +16,34 @@ router.post('/', (req: Request, res: Response) => {
   if (existingTopic) {
     return res.status(400).json({ error: "A topic with this title already exists" });
   }
-
-  const newTopic = new Topic(title);
+  const newTopic = new Topic(title); 
   dummyDataBase.topics.push(newTopic);
 
-  res.status(201).json(newTopic);
+  res.status(200).json(newTopic);
 });
 
-// ADDED: 2. Delete a topic
+// ENDPOINT 2: Delete a topic
 router.delete('/:topicId', (req: Request, res: Response) => {
-  const topicId = parseInt(req.params.topicId, 10);
-
-  if (isNaN(topicId)) {
-    return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-  }
-
+  const topicId = parseInt(req.params.topicId);
   const topicIndex = dummyDataBase.topics.findIndex(t => t.id === topicId);
+
   if (topicIndex === -1) {
-    return res.status(404).json({ error: "Topic not found" });
+    return res.status(404).json({ error: 'Topic not found' });
   }
 
   dummyDataBase.topics.splice(topicIndex, 1);
-
   res.status(204).send();
 });
 
-// ADDED: 3. List all topics
+// ENDPOINT 3. List all topics
 router.get('/', (req: Request, res: Response) => {
+  console.log('Returning all topics:', dummyDataBase.topics)
   res.json(dummyDataBase.topics);
 });
 
-// EDITED: 4. Show a specific topic
-router.get('/topics/:topicId', (req: Request, res: Response) => {
-  const topicId = parseInt(req.params.topicId, 10);
+// ENDPOINT 4. Show a specific topic
+router.get('/:topicId', (req: Request, res: Response) => {
+  const topicId = parseInt(req.params.topicId);
 
   if (isNaN(topicId)) {
     return res.status(400).json({ error: "Invalid topicId. It must be a number." });
@@ -59,12 +53,13 @@ router.get('/topics/:topicId', (req: Request, res: Response) => {
   if (!topic) {
     return res.status(404).json({ error: "Topic not found" });
   }
+  console.log(`Returning topic with ID ${topicId}:`, topic)
 
   res.json(topic);
 });
 
 
-// 09.23 5. Get all articles for a specific topic 
+// ENDPOINT 5. Get all articles for a specific topic 
 router.get('/:topicId/articles', (req: Request, res: Response) => {
   const topicId = parseInt(req.params.topicId, 10);  // using path parameter instead of query parameter
 
@@ -85,9 +80,9 @@ router.get('/:topicId/articles', (req: Request, res: Response) => {
 });
 
 
-// 09.23 EDITED: Update a topic to an articles
-router.put('/:topicId', (req: Request, res: Response) => { //added put
-  const topicId = parseInt(req.params.topicId, 10);
+// ENDPOINT 6: Update a topic (by linking existing article)
+router.put('/:topicId', (req: Request, res: Response) => {
+  const topicId = parseInt(req.params.topicId);
 
   if (isNaN(topicId)) {
     return res.status(400).json({ error: "Invalid topicId. It must be a number." });
@@ -100,27 +95,21 @@ router.put('/:topicId', (req: Request, res: Response) => { //added put
   }
 
   try {
-    const { articles } = req.body; // expecting a list of articles in the request body
+    const { articleIds } = req.body;
     
-
-    if (!articles || !Array.isArray(articles)) { // making sure req body contains articles array
-      return res.status(400).json({ error: "Articles must be provided as an array." });
+    if (!articleIds || !Array.isArray(articleIds)) { 
+      return res.status(400).json({ error: "Article IDs must be provided as an array." });
     }
 
-    articles.forEach(articleData => {
-      const { title, author, text } = articleData;
-      
+    articleIds.forEach(articleId => {
+      const existingArticle = dummyDataBase.articles.find(article => article.id === articleId); // Check if article exists
 
-      let existingArticle = dummyDataBase.articles.find(article => //check if exist
-        article.title === title && article.author === author
-      );
-
-      if (!existingArticle) { // if not create a new one 
-        existingArticle = Article.create(title, author, text, hardCodedDate);
-        dummyDataBase.articles.push(existingArticle);
+      if (!existingArticle) {
+        return res.status(404).json({ error: `Article with ID ${articleId} not found.` });
       }
 
-      if (!topic.articleIds.includes(existingArticle.id)) { // if not added to topic already, add it
+      // Add the article to the topic if not already added
+      if (!topic.articleIds.includes(existingArticle.id)) {
         topic.addArticle(existingArticle.id);
       }
     });

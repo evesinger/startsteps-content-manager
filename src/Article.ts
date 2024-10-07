@@ -1,4 +1,3 @@
-import { hardCodedDate } from "./dummyDataBase";
 import validateArticleData from "./helpers";
 
 export class Article {
@@ -14,10 +13,10 @@ export class Article {
     this.title = title;
     this.author = author;
     this.text = text;
-    this.createdAt = hardCodedDate // *EDIT: changed to hardCodedDate
+    this.createdAt = createdAt
   }
-// *ADDED: static function including helper function 
-  static create(title: string, author: string, text: string, createdAt:Date = hardCodedDate): Article {
+// Static function including helper function 
+  static create(title: string, author: string, text: string, createdAt: Date = new Date()): Article {
     validateArticleData(title, author, text, createdAt);  
     return new Article(title!, author!, text!, createdAt);
   }

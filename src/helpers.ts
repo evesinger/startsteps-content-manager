@@ -1,7 +1,7 @@
 import { hardCodedDate } from "./dummyDataBase";
 
 //* ADDED: helper function for article data validation
-function validateArticleData(title: string, author: string, text: string, createdAt: Date = hardCodedDate) {
+function validateArticleData(title: string, author: string, text: string, createdAt: Date) {
     const errors: string[] = [];
   
     if (!title) errors.push("Title is required");
