@@ -37,26 +37,7 @@ router.get('/:articleId', (req, res) => {
     }
     res.json(article);
 });
-// ENDPOINT 3. Create a new article without specifying a topic
-router.post('/:topicId/articles', (req, res) => {
-    const topicId = parseInt(req.params.topicId);
-    if (isNaN(topicId)) {
-        return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-    }
-    const topic = dummyDataBase_1.dummyDataBase.topics.find(t => t.id === topicId);
-    if (!topic) {
-        return res.status(404).json({ error: "Topic not found" });
-    }
-    const { title, author, text } = req.body;
-    if (!title || !author || !text) {
-        return res.status(400).json({ error: "Title, Author, and Text are required" });
-    }
-    const newArticle = new Article_1.Article(title, author, text, new Date()); // -> now using current date not hardcoded one 
-    dummyDataBase_1.dummyDataBase.articles.push(newArticle);
-    topic.addArticle(newArticle.id);
-    res.status(200).json(newArticle);
-});
-// ENDPOINT 4. Update an article by its ID
+// ENDPOINT 3. Update an article by its ID
 router.put('/:articleId', (req, res) => {
     const articleId = parseInt(req.params.articleId);
     const { title, author, text } = req.body;
@@ -75,7 +56,7 @@ router.put('/:articleId', (req, res) => {
         article.text = text;
     res.json(article);
 });
-// ENDPOINT 5 Delete an article by its ID
+// ENDPOINT 4 Delete an article by its ID
 router.delete('/:articleId', (req, res) => {
     const articleId = parseInt(req.params.articleId);
     if (isNaN(articleId)) {
@@ -85,19 +66,27 @@ router.delete('/:articleId', (req, res) => {
     if (articleIndex === -1) {
         return res.status(404).json({ error: "Article not found" });
     }
-    //Remove the article from the global articles list
     dummyDataBase_1.dummyDataBase.articles.splice(articleIndex, 1);
-    //also remove this article from any topics that reference it
     for (const topic of dummyDataBase_1.dummyDataBase.topics) {
         topic.removeArticle(articleId);
     }
     res.status(204).send();
 });
-// ENDPOINT 6: Getting latest articles
-router.get('/latest', (req, res) => {
+// ENDPOINT 5: Getting latest articles
+router.options('/latest', (req, res) => {
     const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // **Current time minus 1 hour**
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // current time minus 1 hour
     let articles = dummyDataBase_1.dummyDataBase.articles.filter(article => new Date(article.createdAt) > oneHourAgo);
-    res.json(articles.slice(0, 10)); // **Return up to 10 latest articles**
+    res.json(articles); // **return  10 latest articles** .slice(0, 10)
 });
 exports.default = router;
+// ENDPOINT 7. Create a new article withouth linking to a topic
+router.post('/', (req, res) => {
+    const { title, author, text } = req.body;
+    if (!title || !author || !text) {
+        return res.status(400).json({ error: "Title, Author, and Text are required" });
+    }
+    const newArticle = new Article_1.Article(title, author, text, new Date());
+    dummyDataBase_1.dummyDataBase.articles.push(newArticle);
+    res.status(200).json(newArticle);
+});

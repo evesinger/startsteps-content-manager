@@ -15,6 +15,5 @@ app.use(body_parser_1.default.json());
 // Register routes
 app.use('/topics', topicController_1.default); // Handles topic-related routes
 app.use('/articles', articleController_1.default); // Handles article-related routes
-// app.use('/latest-articles', latestarticleController); // Handles latest articles route
 app.listen(port, () => console.log(`Server is running at: http://127.0.0.1:${port}`));
 exports.default = app;

@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { dummyDataBase } from './dummyDataBase';
 import { Topic } from './Topic';
+import { Article } from './Article';
 
 const router = express.Router();
 
@@ -61,7 +62,7 @@ router.get('/:topicId', (req: Request, res: Response) => {
 
 // ENDPOINT 5. Get all articles for a specific topic 
 router.get('/:topicId/articles', (req: Request, res: Response) => {
-  const topicId = parseInt(req.params.topicId, 10);  // using path parameter instead of query parameter
+  const topicId = parseInt(req.params.topicId, 10);  // based on feedback using path parameter instead of query parameter
 
   if (isNaN(topicId)) {
     return res.status(400).json({ error: "Invalid topicId. It must be a number." });
@@ -122,6 +123,31 @@ router.put('/:topicId', (req: Request, res: Response) => {
       res.status(400).json({ error: "An unknown error occurred" });
     }
   }
+});
+
+// ENDPOINT 7. Create a new article linked to a specific topic
+router.post('/:topicId/articles', (req: Request, res: Response) => {
+  const topicId = parseInt(req.params.topicId);
+
+  if (isNaN(topicId)) {
+    return res.status(400).json({ error: "Invalid topicId. It must be a number." });
+  }
+
+  const topic = dummyDataBase.topics.find(t => t.id === topicId);
+  if (!topic) {
+    return res.status(404).json({ error: "Topic not found" });
+  }
+
+  const { title, author, text } = req.body;
+  if (!title || !author || !text) {
+    return res.status(400).json({ error: "Title, Author, and Text are required" });
+  }
+
+  const newArticle = new Article(title, author, text, new Date()); // -> now using current date not hardcoded one 
+  dummyDataBase.articles.push(newArticle); 
+  topic.addArticle(newArticle.id);
+
+  res.status(200).json(newArticle);
 });
 
 export default router;
