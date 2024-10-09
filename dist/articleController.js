@@ -26,7 +26,7 @@ router.get('/', (req, res) => {
     res.json(allArticles);
 });
 // ENDPOINT 2. Get a specific article by its articleID
-router.get('/:articleId', (req, res) => {
+router.get('/:articleId(\\d+)', (req, res) => {
     const articleId = parseInt(req.params.articleId);
     if (isNaN(articleId)) {
         return res.status(400).json({ error: "Invalid articleId. It must be a number." });
@@ -73,7 +73,7 @@ router.delete('/:articleId', (req, res) => {
     res.status(204).send();
 });
 // ENDPOINT 5: Getting latest articles
-router.options('/latest', (req, res) => {
+router.get('/latest', (req, res) => {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // current time minus 1 hour
     let articles = dummyDataBase_1.dummyDataBase.articles.filter(article => new Date(article.createdAt) > oneHourAgo);

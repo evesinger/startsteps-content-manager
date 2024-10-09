@@ -33,7 +33,7 @@ const allArticles = dummyDataBase.articles;
 
 // ENDPOINT 2. Get a specific article by its articleID
 
-router.get('/:articleId', (req: Request, res: Response) => {
+router.get('/:articleId(\\d+)', (req: Request, res: Response) => {
   const articleId = parseInt(req.params.articleId);
 
   if (isNaN(articleId)) {
@@ -95,7 +95,7 @@ router.delete('/:articleId', (req: Request, res: Response) => {
 });
 
   // ENDPOINT 5: Getting latest articles
-  router.options('/latest', (req: Request, res: Response) => {
+  router.get('/latest', (req: Request, res: Response) => {
   
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // current time minus 1 hour
