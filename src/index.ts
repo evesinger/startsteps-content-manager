@@ -1,7 +1,8 @@
 import express, { Application } from 'express';
 import bodyParser from 'body-parser';
-import topicController from './topicController';
-import articleController from './articleController';
+import topicController from './controllers/topicController';
+import articleController from './controllers/articleController';
+import { getArticles } from './controllers/articleController';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,6 +13,7 @@ const app: Application = express();
 app.use(bodyParser.json());
 
 // Register routes
+app.use('/articles', getArticles)
 app.use('/topics', topicController); // Handles topic-related routes
 app.use('/articles', articleController); // Handles article-related routes
 

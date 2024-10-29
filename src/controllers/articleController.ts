@@ -1,11 +1,11 @@
 import express, { Request, Response } from 'express';
-import { Article } from './Article';
-import { dummyDataBase } from './dummyDataBase';
+import { Article } from '../classes/Article';
+import { dummyDataBase } from '../database/dummyDataBase';
 
 const router = express.Router();
 
 // ENDPOINT 1. Get all articles, optionally filtered by topicId
-router.get('/', (req: Request, res: Response) => {
+export const getArticles = (req: Request, res: Response) => {
   const { topicId } = req.query;
 
 
@@ -29,7 +29,7 @@ router.get('/', (req: Request, res: Response) => {
 
 const allArticles = dummyDataBase.articles; 
   res.json(allArticles);
-});
+}
 
 // ENDPOINT 2. Get a specific article by its articleID
 
