@@ -108,3 +108,4 @@ describe('Topic Controller', () => {
     expect(dummyDataBase.topics[0].articleIds).toContain(createdArticle?.id);
   });
 });
+

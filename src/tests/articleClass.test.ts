@@ -41,4 +41,4 @@ describe('Article Class', () => {
 
     expect(article.createdAt).toBe(customDate)
   })
-});
+}); 

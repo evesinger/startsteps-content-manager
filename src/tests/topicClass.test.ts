@@ -59,3 +59,4 @@ describe('Topic Class', () => {
     expect(topic.articleIds).toEqual([101, 102]); 
   });
 });
+

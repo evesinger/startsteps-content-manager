@@ -1,4 +1,4 @@
-import { hardCodedDate } from "./dummyDataBase";
+import { hardCodedDate } from "./database/dummyDataBase";
 
 //* ADDED: helper function for article data validation
 function validateArticleData(title: string, author: string, text: string, createdAt: Date) {
