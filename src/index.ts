@@ -1,7 +1,7 @@
 import express, { Application } from 'express';
 import bodyParser from 'body-parser';
-import topicController from './topicController';
-import articleController from './articleController';
+import topicController from './controllers/topicController';
+import articleController from './controllers/articleController';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -15,7 +15,6 @@ app.use(bodyParser.json());
 app.use('/topics', topicController); // Handles topic-related routes
 app.use('/articles', articleController); // Handles article-related routes
 
-app.listen(port, () => console.log(`Server is running at: http://127.0.0.1:${port}`));
 
 export default app
  
