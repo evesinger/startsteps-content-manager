@@ -14,10 +14,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const supertest_1 = __importDefault(require("supertest"));
 const __1 = __importDefault(require(".."));
-const database_1 = require("../database/database");
+const createTable_1 = require("../database/createTable");
 let db;
 beforeAll(() => __awaiter(void 0, void 0, void 0, function* () {
-    db = yield (0, database_1.initDatabase)(true); //  in-memory database for testing
+    db = yield (0, createTable_1.initDatabase)(true); //  in-memory database for testing
 }));
 afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
     yield db.close();

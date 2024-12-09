@@ -1,153 +1,168 @@
 import express, { Request, Response } from 'express';
-import { dummyDataBase } from '../database/dummyDataBase';
-import { Topic } from '../classes/Topic';
-import { Article } from '../classes/Article';
+import { TopicRepository } from '../repositories/TopicRepository';
+import { ArticleRespository } from '../repositories/ArticleRepository';
 
 const router = express.Router();
 
-//ENDPOINT 1. Create a new topic
-router.post('/', (req: Request, res: Response) => {
+// ENDPOINT 1. Create a new topic
+router.post('/', async (req: Request, res: Response) => {
   const { title } = req.body;
 
   if (!title) {
     return res.status(400).json({ error: "Title is required" });
   }
 
-  const existingTopic = dummyDataBase.topics.find(topic => topic.title.toLowerCase() === title.toLowerCase());
-  if (existingTopic) {
-    return res.status(400).json({ error: "A topic with this title already exists" });
+  try {
+    const newTopic = await TopicRepository.create(title);
+    res.status(200).json(newTopic);
+  } catch (error) {
+    console.error('Error creating topic:', error);
+    res.status(500).json({ error: 'Failed to create topic' });
   }
-  const newTopic = new Topic(title); 
-  dummyDataBase.topics.push(newTopic);
-
-  res.status(200).json(newTopic);
 });
 
-// ENDPOINT 2: Delete a topic
-router.delete('/:topicId', (req: Request, res: Response) => {
-  const topicId = parseInt(req.params.topicId);
-  const topicIndex = dummyDataBase.topics.findIndex(t => t.id === topicId);
-
-  if (topicIndex === -1) {
-    return res.status(404).json({ error: 'Topic not found' });
-  }
-
-  dummyDataBase.topics.splice(topicIndex, 1);
-  res.status(204).send();
-});
-
-// ENDPOINT 3. List all topics
-router.get('/', (req: Request, res: Response) => {
-  console.log('Returning all topics:', dummyDataBase.topics)
-  res.json(dummyDataBase.topics);
-});
-
-// ENDPOINT 4. Show a specific topic
-router.get('/:topicId', (req: Request, res: Response) => {
+// ENDPOINT 2. Delete a topic
+router.delete('/:topicId', async (req: Request, res: Response) => {
   const topicId = parseInt(req.params.topicId);
 
   if (isNaN(topicId)) {
     return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-  }
-
-  const topic = dummyDataBase.topics.find(t => t.id === topicId);
-  if (!topic) {
-    return res.status(404).json({ error: "Topic not found" });
-  }
-  console.log(`Returning topic with ID ${topicId}:`, topic)
-
-  res.json(topic);
-});
-
-
-// ENDPOINT 5. Get all articles for a specific topic 
-router.get('/:topicId/articles', (req: Request, res: Response) => {
-  const topicId = parseInt(req.params.topicId, 10);  // based on feedback using path parameter instead of query parameter
-
-  if (isNaN(topicId)) {
-    return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-  }
-
-  const topic = dummyDataBase.topics.find(t => t.id === topicId);
-  
-  if (!topic) {
-    return res.status(404).json({ error: "Topic not found" });
-  }
-  const articles = topic.articleIds.map(id => 
-    dummyDataBase.articles.find(article => article.id === id)
-  ).filter(article => article !== undefined); // filtering out undefined results
-
-  res.json(articles);
-});
-
-
-// ENDPOINT 6: Update a topic (by linking existing article)
-router.put('/:topicId', (req: Request, res: Response) => {
-  const topicId = parseInt(req.params.topicId);
-
-  if (isNaN(topicId)) {
-    return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-  }
-
-  const topic = dummyDataBase.topics.find(t => t.id === topicId);
-
-  if (!topic) {
-    return res.status(404).json({ error: "Topic not found" });
   }
 
   try {
-    const { articleIds } = req.body;
-    
-    if (!articleIds || !Array.isArray(articleIds)) { 
-      return res.status(400).json({ error: "Article IDs must be provided as an array." });
+    const topic = await TopicRepository.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ error: "Topic not found" });
     }
 
-    articleIds.forEach(articleId => {
-      const existingArticle = dummyDataBase.articles.find(article => article.id === articleId); // Check if article exists
+    await TopicRepository.delete(topicId);
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting topic:', error);
+    res.status(500).json({ error: 'Failed to delete topic' });
+  }
+});
 
-      if (!existingArticle) {
-        return res.status(404).json({ error: `Article with ID ${articleId} not found.` });
-      }
+// ENDPOINT 3. List all topics
+router.get('/', async (_req: Request, res: Response) => {
+  try {
+    const topics = await TopicRepository.findAll();
+    res.status(200).json(topics);
+  } catch (error) {
+    console.error('Error fetching topics:', error);
+    res.status(500).json({ error: 'Failed to fetch topics' });
+  }
+});
 
-      // Add the article to the topic if not already added
-      if (!topic.articleIds.includes(existingArticle.id)) {
-        topic.addArticle(existingArticle.id);
-      }
-    });
+// ENDPOINT 4. Show a specific topic
+router.get('/:topicId', async (req: Request, res: Response) => {
+  const topicId = parseInt(req.params.topicId);
 
-    res.status(200).json({ message: "Articles updated for the topic", topic });
-  } catch (error: any) {
-    if (error) {
-      res.status(400).json({ error: error.message });
-    } else {
-      res.status(400).json({ error: "An unknown error occurred" });
+  if (isNaN(topicId)) {
+    return res.status(400).json({ error: "Invalid topicId. It must be a number." });
+  }
+
+  try {
+    const topic = await TopicRepository.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ error: "Topic not found" });
     }
+
+    res.status(200).json(topic);
+  } catch (error) {
+    console.error('Error fetching topic:', error);
+    res.status(500).json({ error: 'Failed to fetch topic' });
+  }
+});
+
+// ENDPOINT 5. Get all articles for a specific topic
+router.get('/:topicId/articles', async (req: Request, res: Response) => {
+  const topicId = parseInt(req.params.topicId);
+
+  if (isNaN(topicId)) {
+    return res.status(400).json({ error: "Invalid topicId. It must be a number." });
+  }
+
+  try {
+    const topic = await TopicRepository.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ error: "Topic not found" });
+    }
+
+    const articles = await TopicRepository.getArticlesForTopic(topicId);
+    res.status(200).json(articles);
+  } catch (error) {
+    console.error('Error fetching articles for topic:', error);
+    res.status(500).json({ error: 'Failed to fetch articles for topic' });
+  }
+});
+
+// ENDPOINT 6. Update a topic (link existing articles)
+router.put('/:topicId', async (req: Request, res: Response) => {
+  const topicId = parseInt(req.params.topicId);
+  const { articleIds } = req.body;
+
+  if (isNaN(topicId)) {
+    return res.status(400).json({ error: "Invalid topicId. It must be a number." });
+  }
+
+  if (!articleIds || !Array.isArray(articleIds)) {
+    return res.status(400).json({ error: "Article IDs must be provided as an array." });
+  }
+
+  try {
+    const topic = await TopicRepository.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ error: "Topic not found" });
+    }
+
+    const invalidArticles = [];
+    for (const articleId of articleIds) {
+      const article = await ArticleRespository.findById(articleId);
+      if (!article) {
+        invalidArticles.push(articleId);
+      }
+    }
+
+    if (invalidArticles.length > 0) {
+      return res.status(404).json({ error: `Articles with IDs ${invalidArticles.join(', ')} not found.` });
+    }
+
+    await TopicRepository.addArticlesToTopic(topicId, articleIds);
+    res.status(200).json({ message: "Articles linked to topic successfully." });
+  } catch (error) {
+    console.error('Error updating topic:', error);
+    res.status(500).json({ error: 'Failed to update topic' });
   }
 });
 
 // ENDPOINT 7. Create a new article linked to a specific topic
-router.post('/:topicId/articles', (req: Request, res: Response) => {
+router.post('/:topicId/articles', async (req: Request, res: Response) => {
   const topicId = parseInt(req.params.topicId);
+  const { title, author, text } = req.body;
 
   if (isNaN(topicId)) {
     return res.status(400).json({ error: "Invalid topicId. It must be a number." });
   }
 
-  const topic = dummyDataBase.topics.find(t => t.id === topicId);
-  if (!topic) {
-    return res.status(404).json({ error: "Topic not found" });
-  }
-
-  const { title, author, text } = req.body;
   if (!title || !author || !text) {
-    return res.status(400).json({ error: "Title, Author, and Text are required" });
+    return res.status(400).json({ error: "Title, Author, and Text are required." });
   }
 
-  const newArticle = new Article(title, author, text, new Date()); // -> now using current date not hardcoded one 
-  dummyDataBase.articles.push(newArticle); 
-  topic.addArticle(newArticle.id);
+  try {
+    const topic = await TopicRepository.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ error: "Topic not found." });
+    }
 
-  res.status(200).json(newArticle);
+    const newArticle = await ArticleRespository.create(title, author, text);
+    await TopicRepository.addArticlesToTopic(topicId, [newArticle.id]);
+
+    res.status(200).json(newArticle);
+  } catch (error) {
+    console.error('Error creating article for topic:', error);
+    res.status(500).json({ error: 'Failed to create article for topic.' });
+  }
 });
 
 export default router;

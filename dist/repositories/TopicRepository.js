@@ -8,49 +8,56 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TopicRepository = void 0;
-const database_1 = require("../database/database");
-const Topic_1 = require("../classes/Topic");
-exports.TopicRepository = {
-    create(title) {
+const dbconfig_1 = __importDefault(require("../configs/dbconfig"));
+class TopicRepository {
+    static create(title) {
         return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            const result = yield db.run('INSERT INTO topics (title) VALUES (?)', title);
-            return new Topic_1.Topic(title);
-        });
-    },
-    findById(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            const row = yield db.get('SELECT * FROM topics WHERE id = ?', id);
-            return row ? new Topic_1.Topic(row.title) : null;
-        });
-    },
-    findAll() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            const rows = yield db.all('SELECT * FROM topics');
-            return rows.map(row => new Topic_1.Topic(row.title));
-        });
-    },
-    addArticleToTopic(topicId, articleId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            yield db.run('INSERT OR IGNORE INTO topic_articles (topic_id, article_id) VALUES (?, ?)', topicId, articleId);
-        });
-    },
-    removeArticleFromTopic(topicId, articleId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            yield db.run('DELETE FROM topic_articles WHERE topic_id = ? AND article_id = ?', topicId, articleId);
-        });
-    },
-    getArticlesForTopic(topicId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            const rows = yield db.all('SELECT article_id FROM topic_articles WHERE topic_id = ?', topicId);
-            return rows.map(row => row.article_id);
+            const [newTopic] = yield (0, dbconfig_1.default) `
+      INSERT INTO topics (title)
+      VALUES (${title})
+      RETURNING *;
+    `;
+            return newTopic;
         });
     }
-};
+    static delete(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield (0, dbconfig_1.default) `DELETE FROM topics WHERE id = ${id};`;
+        });
+    }
+    static findAll() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield (0, dbconfig_1.default) `SELECT * FROM topics;`;
+        });
+    }
+    static findById(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const [topic] = yield (0, dbconfig_1.default) `SELECT * FROM topics WHERE id = ${id};`;
+            return topic;
+        });
+    }
+    static getArticlesForTopic(topicId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield (0, dbconfig_1.default) `
+      SELECT articles.*
+      FROM articles
+      WHERE articles.topic_id = ${topicId};
+    `;
+        });
+    }
+    static addArticlesToTopic(topicId, articleIds) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield Promise.all(articleIds.map(articleId => (0, dbconfig_1.default) `
+          UPDATE articles
+          SET topic_id = ${topicId}
+          WHERE id = ${articleId};
+        `));
+        });
+    }
+}
+exports.TopicRepository = TopicRepository;

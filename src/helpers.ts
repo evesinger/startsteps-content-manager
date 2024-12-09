@@ -1,4 +1,4 @@
-import { hardCodedDate } from "./database/dummyDataBase";
+// To be repalced with Joi librry 
 
 //* ADDED: helper function for article data validation
 function validateArticleData(title: string, author: string, text: string, createdAt: Date) {

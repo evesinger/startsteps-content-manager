@@ -8,58 +8,54 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ArticleRepository = void 0;
-const database_1 = require("../database/database");
-const Article_1 = require("../classes/Article");
-exports.ArticleRepository = {
-    create(title, authorId, text) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            const author = yield db.get('SELECT * FROM authors WHERE id = ?', authorId);
-            if (!author) {
-                throw new Error('Author not found');
-            }
-            const result = yield db.run('INSERT INTO articles (title, author_id, text, created_at) VALUES (?, ?, ?, ?)', title, authorId, text, new Date());
-            const articleId = result.lastID;
-            return new Article_1.Article(title, author, text, new Date());
-        });
-    },
-    findById(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            const row = yield db.get('SELECT * FROM articles WHERE id = ?', id);
-            if (!row)
-                return null;
-            const author = yield db.get('SELECT * FROM authors WHERE id = ?', row.author_id);
-            return new Article_1.Article(row.title, author, row.text, new Date(row.created_at));
-        });
-    },
-    findAll() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            const rows = yield db.all('SELECT * FROM articles');
-            const articles = yield Promise.all(rows.map((row) => __awaiter(this, void 0, void 0, function* () {
-                const author = yield db.get('SELECT * FROM authors WHERE id = ?', row.author_id);
-                return new Article_1.Article(row.title, author, row.text, new Date(row.created_at));
-            })));
-            return articles;
-        });
-    },
-    update(id, title, authorId, text) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            const author = yield db.get('SELECT * FROM authors WHERE id = ?', authorId);
-            if (!author) {
-                throw new Error('Author not found');
-            }
-            yield db.run('UPDATE articles SET title = ?, author_id = ?, text = ? WHERE id = ?', title, authorId, text, id);
-        });
-    },
-    delete(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const db = yield (0, database_1.initDatabase)();
-            yield db.run('DELETE FROM articles WHERE id = ?', id);
-        });
-    },
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ArticleRespository = void 0;
+const dbconfig_1 = __importDefault(require("../configs/dbconfig"));
+class ArticleRespository {
+    static findAll() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield (0, dbconfig_1.default) `SELECT * FROM articles`;
+        });
+    }
+    static findById(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const [article] = yield (0, dbconfig_1.default) `SELECT * FROM articles WHERE id = ${id}`;
+            return article;
+        });
+    }
+    static create(title, author, text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const [newArticle] = yield (0, dbconfig_1.default) `
+    INSERT INTO articles (title, author, text, created_at)
+    VALUE (${title}, ${author}, ${text}
+    RETURNING *`;
+            return newArticle;
+        });
+    }
+    static update(id, title, author, text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield (0, dbconfig_1.default) `
+    UPDATE articles 
+    SET title = ${title}, author = ${author}, text = ${text}
+    WHERE id= ${id}`;
+        });
+    }
+    static delete(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield (0, dbconfig_1.default) `DELETE FROM articles WHERE id = ${id}`;
+        });
+    }
+    static findLatest(since) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield (0, dbconfig_1.default) `
+    SELECT * FROM articles 
+    WHERE created_at > ${since}
+    ORDER BY created_at DESC
+    LIMIT 10`;
+        });
+    }
+}
+exports.ArticleRespository = ArticleRespository;

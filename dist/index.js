@@ -7,15 +7,14 @@ const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const topicController_1 = __importDefault(require("./controllers/topicController"));
 const articleController_1 = __importDefault(require("./controllers/articleController"));
-const articleController_2 = require("./controllers/articleController");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const port = process.env.PORT || 3000;
 const app = (0, express_1.default)();
 app.use(body_parser_1.default.json());
 // Register routes
-app.use('/articles', articleController_2.getArticles);
-app.use('/topics', topicController_1.default); // Handles topic-related routes
-app.use('/articles', articleController_1.default); // Handles article-related routes
+app.use('/articles', articleController_1.default);
+app.use('/topics', topicController_1.default);
+app.use('/articles', articleController_1.default);
 app.listen(port, () => console.log(`Server is running at: http://127.0.0.1:${port}`));
 exports.default = app;

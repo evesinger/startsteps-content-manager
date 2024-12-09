@@ -1,20 +1,19 @@
 import express, { Request, Response } from 'express';
-import { ArticleRepository } from '../repositories/ArticleRepository';
+import { ArticleRespository } from '../repositories/ArticleRepository';
 const router = express.Router();
 
-// ENDPOINT 1. Get all articles, optionally filtered by topicId
+// Get all articles
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const articles = await ArticleRepository.findAll();
+    const articles = await ArticleRespository.findAll();
     res.status(200).json(articles);
   } catch (err) {
-    console.error("Error in GET /articles:", err); // Log the error for debugging
+    console.error("Error in GET /articles:", err); 
     res.status(500).json({ error: "Failed to retrieve articles" });
   }
 });
 
-// ENDPOINT 2. Get a specific article by its articleID
-
+// Get a specific article by its articleID
 router.get('/:articleId(\\d+)', async (req: Request, res: Response) => {
   const articleId = parseInt(req.params.articleId);
 
@@ -23,7 +22,7 @@ router.get('/:articleId(\\d+)', async (req: Request, res: Response) => {
   }
 
   try {
-    const article = await ArticleRepository.findById(articleId);
+    const article = await ArticleRespository.findById(articleId);
 
     if (!article) {
       return res.status(404).json({ error: "Article not found" });
@@ -36,7 +35,7 @@ router.get('/:articleId(\\d+)', async (req: Request, res: Response) => {
 });
 
 
-// ENDPOINT 3. Update an article by its ID
+// Update an article by its ID
 router.put('/:articleId', async (req: Request, res: Response) => {
   const articleId = parseInt(req.params.articleId);
   const { title, author, text } = req.body;
@@ -49,14 +48,14 @@ router.put('/:articleId', async (req: Request, res: Response) => {
   }
 
   try {
-    const article = await ArticleRepository.findById(articleId);
+    const article = await ArticleRespository.findById(articleId);
 
     if (!article) {
       return res.status(404).json({ error: "Article not found" });
     }
 
-    await ArticleRepository.update(articleId, title, author, text);
-    const updatedArticle = await ArticleRepository.findById(articleId);
+    await ArticleRespository.update(articleId, title, author, text);
+    const updatedArticle = await ArticleRespository.findById(articleId);
 
     res.json(updatedArticle);
   } catch (err) {
@@ -64,7 +63,7 @@ router.put('/:articleId', async (req: Request, res: Response) => {
   }
 });
 
-// ENDPOINT 4 Delete an article by its ID
+// Delete an article by its ID
 router.delete('/:articleId',  async (req: Request, res: Response) => {
   const articleId = parseInt(req.params.articleId);
 
@@ -73,32 +72,35 @@ router.delete('/:articleId',  async (req: Request, res: Response) => {
   }
 
   try {
-    const article = await ArticleRepository.findById(articleId);
+    const article = await ArticleRespository.findById(articleId);
 
     if (!article) {
       return res.status(404).json({ error: "Article not found" });
     }
 
-    await ArticleRepository.delete(articleId);
+    await ArticleRespository.delete(articleId);
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: "Failed to delete the article" });
   }
 });
 
-  // ENDPOINT 5: Getting latest articles
-  // router.get('/latest', async (req: Request, res: Response) => {
-  //   try {
-  //     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // current time minus 1 hour
-  //     const articles = await ArticleRepository.findLatest(oneHourAgo);
-  //     res.json(articles.slice(0, 10)); // return up to 10 latest articles
-  //   } catch (err) {
-  //     res.status(500).json({ error: "Failed to retrieve latest articles" });
-  //   }
-  // });
+  //Getting latest articles
+router.get('/latest', async (req: Request, res: Response) => {
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
+    const articles = await ArticleRespository.findLatest(oneHourAgo);
+
+    res.status(200).json(articles.slice(0, 10));
+  } catch (err) {
+    console.error("Error in GET /latest:", err);
+    res.status(500).json({ error: "Failed to retrieve the latest articles" });
+  }
+});
 
 
-  // ENDPOINT 7. Create a new article withouth linking to a topic
+
+  // Create a new article withouth linking to a topic
 router.post('/', async (req: Request, res: Response) => {
   const { title, author, text } = req.body;
 
@@ -107,7 +109,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-  const newArticle = await ArticleRepository.create(title, author, text);
+  const newArticle = await ArticleRespository.create(title, author, text);
   res.status(201).json(newArticle);
 } catch (err) {
   res.status(500).json({ error: "Failed to create article" });
