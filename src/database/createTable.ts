@@ -18,10 +18,10 @@ const createTables = async () => {
     `;
     console.log('Articles table modified successfully.');
 
-    process.exit(0); // Exit the script successfully
+    process.exit(0); 
   } catch (error) {
     console.error('Error creating tables:', error);
-    process.exit(1); // Exit with an error code
+    process.exit(1); 
   }
 };
 
