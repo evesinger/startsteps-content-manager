@@ -10,32 +10,32 @@ describe('Article Controller', () => {
       new Article("Test Article 1", "John Doe", "This is the first test article", new Date('2024-09-01T00:00:00Z')),
       new Article("Test Article 2", "Jane Doe", "This is the second test article", new Date('2024-09-01T00:00:00Z'))
     ];
-    //assertions for lenth
-    expect(dummyDataBase.articles).toHaveLength(2); 
-    expect(dummyDataBase.articles[0].title).toBe("Test Article 1");
-    expect(dummyDataBase.articles[1].title).toBe("Test Article 2");
-  });
+        //assertions for lenth
+        expect(dummyDataBase.articles).toHaveLength(2); 
+        expect(dummyDataBase.articles[0].title).toBe("Test Article 1");
+        expect(dummyDataBase.articles[1].title).toBe("Test Article 2");
+      });
 
   // TEST 1
   test('GET /articles should return all articles', async () => {
     const response = await request(app).get('/articles');
     expect(response.status).toBe(200);
     expect(response.body.length).toBe(2);
-    //asserting contents 
-    expect(response.body).toEqual([
-      expect.objectContaining({
-        title: "Test Article 1",
-        author: "John Doe",
-        text: "This is the first test article",
-      }),
-      expect.objectContaining({
-        title: "Test Article 2",
-        author: "Jane Doe",
-        text: "This is the second test article",
-      }),
-    ]);
-  });
-  
+        //asserting contents 
+        expect(response.body).toEqual([
+          expect.objectContaining({
+            title: "Test Article 1",
+            author: "John Doe",
+            text: "This is the first test article",
+          }),
+          expect.objectContaining({
+            title: "Test Article 2",
+            author: "Jane Doe",
+            text: "This is the second test article",
+          }),
+        ]);
+      });
+      
 
   // TEST 2
 
