@@ -16,13 +16,12 @@ const dbconfig_1 = __importDefault(require("../configs/dbconfig"));
 const seedDatabase = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log('Clearing old data...');
-        // Clear the data from the tables
+        // Clear 
         yield (0, dbconfig_1.default) `DELETE FROM articles;`;
         yield (0, dbconfig_1.default) `DELETE FROM topics;`;
-        // Reset the sequence for the articles table
+        // Reset 
         console.log('Resetting articles sequence...');
-        yield (0, dbconfig_1.default) `ALTER SEQUENCE articles_id_seq RESTART WITH 1;`; // Replace `articles_id_seq` with the correct sequence name if different.
-        // Insert new topics
+        yield (0, dbconfig_1.default) `ALTER SEQUENCE articles_id_seq RESTART WITH 1;`;
         console.log('Inserting topics...');
         const topics = yield (0, dbconfig_1.default) `
       INSERT INTO topics (title)
@@ -30,7 +29,6 @@ const seedDatabase = () => __awaiter(void 0, void 0, void 0, function* () {
       RETURNING *;
     `;
         console.log('Inserted topics:', topics);
-        // Insert new articles
         console.log('Inserting articles...');
         yield (0, dbconfig_1.default) `
       INSERT INTO articles (title, author, text, topic_id)

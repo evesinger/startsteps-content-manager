@@ -13,146 +13,92 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const TopicRepository_1 = require("../repositories/TopicRepository");
-const ArticleRepository_1 = require("../repositories/ArticleRepository");
+const postgres_1 = __importDefault(require("postgres"));
+const sql = (0, postgres_1.default)({
+    host: process.env.DB_HOST || "localhost",
+    port: Number(process.env.DB_PORT) || 5432,
+    database: process.env.DB_NAME || "newsmanagement_db",
+    user: process.env.DB_USER || "postgres",
+    password: process.env.DB_PASSWORD || "postgres",
+});
 const router = express_1.default.Router();
-// ENDPOINT 1. Create a new topic
-router.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+// Create a new topic
+router.post("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title } = req.body;
     if (!title) {
         return res.status(400).json({ error: "Title is required" });
     }
     try {
-        const newTopic = yield TopicRepository_1.TopicRepository.create(title);
-        res.status(200).json(newTopic);
+        const result = yield sql `INSERT INTO topics (title) VALUES (${title}) RETURNING *`;
+        res.status(201).json(result[0]);
     }
     catch (error) {
-        console.error('Error creating topic:', error);
-        res.status(500).json({ error: 'Failed to create topic' });
+        console.error("Error creating topic:", error);
+        res.status(500).json({ error: "Failed to create topic" });
     }
 }));
-// ENDPOINT 2. Delete a topic
-router.delete('/:topicId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const topicId = parseInt(req.params.topicId);
-    if (isNaN(topicId)) {
-        return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-    }
+// List all topics
+router.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const topic = yield TopicRepository_1.TopicRepository.findById(topicId);
-        if (!topic) {
-            return res.status(404).json({ error: "Topic not found" });
-        }
-        yield TopicRepository_1.TopicRepository.delete(topicId);
-        res.status(204).send();
-    }
-    catch (error) {
-        console.error('Error deleting topic:', error);
-        res.status(500).json({ error: 'Failed to delete topic' });
-    }
-}));
-// ENDPOINT 3. List all topics
-router.get('/', (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const topics = yield TopicRepository_1.TopicRepository.findAll();
+        const topics = yield sql `SELECT * FROM topics`;
         res.status(200).json(topics);
     }
     catch (error) {
-        console.error('Error fetching topics:', error);
-        res.status(500).json({ error: 'Failed to fetch topics' });
+        console.error("Error fetching topics:", error);
+        res.status(500).json({ error: "Failed to fetch topics" });
     }
 }));
-// ENDPOINT 4. Show a specific topic
-router.get('/:topicId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const topicId = parseInt(req.params.topicId);
-    if (isNaN(topicId)) {
-        return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-    }
+// Get a specific topic by ID
+router.get("/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
     try {
-        const topic = yield TopicRepository_1.TopicRepository.findById(topicId);
-        if (!topic) {
+        const topic = yield sql `SELECT * FROM topics WHERE id = ${id}`;
+        if (!topic.length) {
             return res.status(404).json({ error: "Topic not found" });
         }
-        res.status(200).json(topic);
+        res.status(200).json(topic[0]);
     }
     catch (error) {
-        console.error('Error fetching topic:', error);
-        res.status(500).json({ error: 'Failed to fetch topic' });
+        console.error("Error fetching topic:", error);
+        res.status(500).json({ error: "Failed to fetch topic" });
     }
 }));
-// ENDPOINT 5. Get all articles for a specific topic
-router.get('/:topicId/articles', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const topicId = parseInt(req.params.topicId);
-    if (isNaN(topicId)) {
-        return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-    }
+// Delete a topic by ID
+router.delete("/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
     try {
-        const topic = yield TopicRepository_1.TopicRepository.findById(topicId);
-        if (!topic) {
+        const result = yield sql `DELETE FROM topics WHERE id = ${id} RETURNING *`;
+        if (!result.length) {
             return res.status(404).json({ error: "Topic not found" });
         }
-        const articles = yield TopicRepository_1.TopicRepository.getArticlesForTopic(topicId);
-        res.status(200).json(articles);
+        res.status(200).json({ message: "Topic deleted", topic: result[0] });
     }
     catch (error) {
-        console.error('Error fetching articles for topic:', error);
-        res.status(500).json({ error: 'Failed to fetch articles for topic' });
+        console.error("Error deleting topic:", error);
+        res.status(500).json({ error: "Failed to delete topic" });
     }
 }));
-// ENDPOINT 6. Update a topic (link existing articles)
-router.put('/:topicId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const topicId = parseInt(req.params.topicId);
+// Link articles to a topic
+router.put("/:id/articles", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
     const { articleIds } = req.body;
-    if (isNaN(topicId)) {
-        return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-    }
-    if (!articleIds || !Array.isArray(articleIds)) {
-        return res.status(400).json({ error: "Article IDs must be provided as an array." });
+    if (!Array.isArray(articleIds) || articleIds.length === 0) {
+        return res.status(400).json({ error: "Article IDs must be provided as a non-empty array" });
     }
     try {
-        const topic = yield TopicRepository_1.TopicRepository.findById(topicId);
-        if (!topic) {
+        // Check if the topic exists
+        const topic = yield sql `SELECT * FROM topics WHERE id = ${id}`;
+        if (!topic.length) {
             return res.status(404).json({ error: "Topic not found" });
         }
-        const invalidArticles = [];
-        for (const articleId of articleIds) {
-            const article = yield ArticleRepository_1.ArticleRespository.findById(articleId);
-            if (!article) {
-                invalidArticles.push(articleId);
-            }
-        }
-        if (invalidArticles.length > 0) {
-            return res.status(404).json({ error: `Articles with IDs ${invalidArticles.join(', ')} not found.` });
-        }
-        yield TopicRepository_1.TopicRepository.addArticlesToTopic(topicId, articleIds);
-        res.status(200).json({ message: "Articles linked to topic successfully." });
+        // Link each article to the topic
+        const queries = articleIds.map((articleId) => sql `INSERT INTO topic_articles (topic_id, article_id) VALUES (${id}, ${articleId}) ON CONFLICT DO NOTHING`);
+        yield Promise.all(queries);
+        res.status(200).json({ message: "Articles linked to topic successfully" });
     }
     catch (error) {
-        console.error('Error updating topic:', error);
-        res.status(500).json({ error: 'Failed to update topic' });
-    }
-}));
-// ENDPOINT 7. Create a new article linked to a specific topic
-router.post('/:topicId/articles', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const topicId = parseInt(req.params.topicId);
-    const { title, author, text } = req.body;
-    if (isNaN(topicId)) {
-        return res.status(400).json({ error: "Invalid topicId. It must be a number." });
-    }
-    if (!title || !author || !text) {
-        return res.status(400).json({ error: "Title, Author, and Text are required." });
-    }
-    try {
-        const topic = yield TopicRepository_1.TopicRepository.findById(topicId);
-        if (!topic) {
-            return res.status(404).json({ error: "Topic not found." });
-        }
-        const newArticle = yield ArticleRepository_1.ArticleRespository.create(title, author, text);
-        yield TopicRepository_1.TopicRepository.addArticlesToTopic(topicId, [newArticle.id]);
-        res.status(200).json(newArticle);
-    }
-    catch (error) {
-        console.error('Error creating article for topic:', error);
-        res.status(500).json({ error: 'Failed to create article for topic.' });
+        console.error("Error linking articles to topic:", error);
+        res.status(500).json({ error: "Failed to link articles to topic" });
     }
 }));
 exports.default = router;

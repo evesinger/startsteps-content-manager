@@ -29,11 +29,11 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
       ADD COLUMN IF NOT EXISTS topic_id INT REFERENCES topics(id) ON DELETE SET NULL;
     `;
         console.log('Articles table modified successfully.');
-        process.exit(0); // Exit the script successfully
+        process.exit(0);
     }
     catch (error) {
         console.error('Error creating tables:', error);
-        process.exit(1); // Exit with an error code
+        process.exit(1);
     }
 });
 createTables();

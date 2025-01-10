@@ -5,18 +5,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Article = void 0;
 const helpers_1 = __importDefault(require("../helpers"));
+//import { Author } from "./Author";
 class Article {
-    constructor(title, author, text, createdAt) {
+    constructor(title, text, createdAt) {
         this.id = Article.articleCounter++;
         this.title = title;
-        this.author = author;
+        //this.author = author;
         this.text = text;
         this.createdAt = createdAt;
     }
     // Static function including helper function 
-    static create(title, author, text, createdAt = new Date()) {
-        (0, helpers_1.default)(title, author.name, text, createdAt);
-        return new Article(title, author, text, createdAt);
+    static create(title, text, createdAt = new Date()) {
+        (0, helpers_1.default)(title, text, createdAt);
+        return new Article(title, text, createdAt);
     }
 }
 exports.Article = Article;

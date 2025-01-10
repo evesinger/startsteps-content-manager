@@ -1,6 +1,7 @@
 import postgres from "postgres";
+import dotenv from "dotenv";
 
-import dotenv from 'dotenv';
+// Load environment variables from .env
 dotenv.config();
 
 const sql = postgres({
@@ -9,7 +10,6 @@ const sql = postgres({
     database: process.env.DB_NAME || "newsmanagement_db",
     user: process.env.DB_USER || "postgres",
     password: process.env.DB_PASSWORD || "postgres"
-    // add SSL later maybe
-})
+});
 
-export default sql
+export default sql;

@@ -3,6 +3,7 @@ import bodyParser from 'body-parser';
 import topicController from './controllers/topicController';
 import articleController from './controllers/articleController';
 import dotenv from 'dotenv';
+import cors from "cors";
 
 dotenv.config();
 
@@ -10,13 +11,12 @@ const port = process.env.PORT || 3000;
 const app: Application = express();
 
 app.use(bodyParser.json());
+app.use(cors());
 
 // Register routes
-app.use('/articles', articleController)
-app.use('/topics', topicController); 
-app.use('/articles', articleController); 
+app.use('/topics', topicController); // Handles topic-related routes
+app.use('/articles', articleController); // Handles article-related routes
 
-app.listen(port, () => console.log(`Server is running at: http://127.0.0.1:${port}`));
 
 export default app
  

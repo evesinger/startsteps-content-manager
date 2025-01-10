@@ -87,16 +87,12 @@ router.delete('/:articleId', (req, res) => __awaiter(void 0, void 0, void 0, fun
 //Getting latest articles
 router.get('/latest', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Calculate the timestamp for articles created in the last hour
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
-        // Fetch articles from the repository that were created after `oneHourAgo`
         const articles = yield ArticleRepository_1.ArticleRespository.findLatest(oneHourAgo);
-        // Limit the response to 10 articles
         res.status(200).json(articles.slice(0, 10));
     }
     catch (err) {
         console.error("Error in GET /latest:", err);
-        // Respond with a 500 status code if any error occurs
         res.status(500).json({ error: "Failed to retrieve the latest articles" });
     }
 }));
