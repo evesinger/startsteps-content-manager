@@ -12,9 +12,11 @@ const app: Application = express();
 app.use(bodyParser.json());
 
 // Register routes
-app.use('/topics', topicController); // Handles topic-related routes
-app.use('/articles', articleController); // Handles article-related routes
+app.use('/articles', articleController)
+app.use('/topics', topicController); 
+app.use('/articles', articleController); 
 
+app.listen(port, () => console.log(`Server is running at: http://127.0.0.1:${port}`));
 
 export default app
  

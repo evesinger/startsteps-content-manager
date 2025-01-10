@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '..';
-import { dummyDataBase } from '../database/dummyDataBase';
-import { Topic } from '../classes/Topic';
+import { dummyDataBase } from '../dummyDatabase';
+import { Topic } from '../classes/Topics';
 import { Article } from '../classes/Article';
 
 describe('Topic Controller', () => {

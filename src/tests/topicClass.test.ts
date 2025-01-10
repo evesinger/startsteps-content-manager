@@ -1,4 +1,4 @@
-import { Topic } from "../classes/Topic";
+import { Topic } from "../classes/Topics";
 
 describe('Topic Class', () => {
   beforeEach(() => {

@@ -1,6 +1,6 @@
 import request from 'supertest';
 import app from '..';
-import { dummyDataBase } from '../database/dummyDataBase';
+import { dummyDataBase } from '../dummyDatabase';
 import { Article } from '../classes/Article';
 
 describe('Article Controller', () => {
@@ -10,6 +10,10 @@ describe('Article Controller', () => {
       new Article("Test Article 1", "John Doe", "This is the first test article", new Date('2024-09-01T00:00:00Z')),
       new Article("Test Article 2", "Jane Doe", "This is the second test article", new Date('2024-09-01T00:00:00Z'))
     ];
+    //assertions for lenth
+    expect(dummyDataBase.articles).toHaveLength(2); 
+    expect(dummyDataBase.articles[0].title).toBe("Test Article 1");
+    expect(dummyDataBase.articles[1].title).toBe("Test Article 2");
   });
 
   // TEST 1
@@ -17,7 +21,21 @@ describe('Article Controller', () => {
     const response = await request(app).get('/articles');
     expect(response.status).toBe(200);
     expect(response.body.length).toBe(2);
+    //asserting contents 
+    expect(response.body).toEqual([
+      expect.objectContaining({
+        title: "Test Article 1",
+        author: "John Doe",
+        text: "This is the first test article",
+      }),
+      expect.objectContaining({
+        title: "Test Article 2",
+        author: "Jane Doe",
+        text: "This is the second test article",
+      }),
+    ]);
   });
+  
 
   // TEST 2
 
@@ -62,12 +80,18 @@ describe('Article Controller', () => {
   // TEST 6
 
   test('GET /articles/latest should return articles created within the last hour', async () => {
-    const recentArticle = new Article("Recent Article", "Recent Author", "This is recent", new Date());
+    const recentArticle = new Article("TEST Article", "TEST Author", "lorem ipsum", new Date());
     dummyDataBase.articles.push(recentArticle);
-
     const response = await request(app).get('/articles/latest');
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual(expect.arrayContaining([expect.objectContaining({ title: "Recent Article" })]));
+    expect(response.body).toEqual([
+      {
+        title: "TEST Article",
+        author: "TEST Author",
+        text: "lorem ipsum",
+        id: recentArticle.id, 
+        createdAt: recentArticle.createdAt.toISOString(),
+      },
+    ]);
   });
 
   // TEST 7
