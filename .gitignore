@@ -1,9 +1,4 @@
 node_modules
 .idea 
-# Ignore everything
-*
-
-# Except src/tests/
-!src/
-!src/tests/
-!src/tests/**
+(" \ added back idea")
+.codegpt
