@@ -1,4 +1,4 @@
-import validateArticleData from "./helpers";
+import validateArticleData from "../helpers";
 
 export class Article {
   static articleCounter: number = 1;

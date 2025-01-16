@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
-import { dummyDataBase } from './dummyDataBase';
-import { Topic } from './Topic';
-import { Article } from './Article';
+import { dummyDataBase } from '../database/dummyDataBase';
+import { Topic } from '../classes/Topic';
+import { Article } from '../classes/Article';
 
 const router = express.Router();
 
