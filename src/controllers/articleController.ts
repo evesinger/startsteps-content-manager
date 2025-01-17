@@ -1,123 +1,103 @@
 import express, { Request, Response } from 'express';
-import { ArticleRespository } from '../repositories/ArticleRepository';
+import { ArticleRepository } from '../repositories/ArticleRepository';
 const router = express.Router();
 
 // Get all articles
-router.get('/', async (req: Request, res: Response) => {
+router.get("/", async (_req: Request, res: Response) => {
   try {
-    const articles = await ArticleRespository.findAll();
+    const articles = await ArticleRepository.findAll();
     res.status(200).json(articles);
-  } catch (err) {
-    console.error("Error in GET /articles:", err); 
-    res.status(500).json({ error: "Failed to retrieve articles" });
+  } catch (error) {
+    console.error("Error fetching articles:", error);
+    res.status(500).json({ error: "Failed to fetch articles" });
   }
 });
 
-// Get a specific article by its articleID
-router.get('/:articleId(\\d+)', async (req: Request, res: Response) => {
-  const articleId = parseInt(req.params.articleId);
+// Get an article by ID
+router.get("/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const article = await ArticleRepository.findById(Number(id));
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+    res.status(200).json(article);
+  } catch (error) {
+    console.error("Error fetching article:", error);
+    res.status(500).json({ error: "Failed to fetch article" });
+  }
+});
 
-  if (isNaN(articleId)) {
-    return res.status(400).json({ error: "Invalid articleId. It must be a number." });
+// Create an article
+router.post("/", async (req: Request, res: Response) => {
+  const { title, author, text, image, topicId } = req.body;
+
+  if (!title || !author || !text || !image || !topicId) {
+    return res.status(400).json({ error: "All fields are required" });
   }
 
   try {
-    const article = await ArticleRespository.findById(articleId);
+    const newArticle = await ArticleRepository.create(
+      title,
+      author,
+      text,
+      image,
+      topicId
+    );
+    res.status(201).json(newArticle);
+  } catch (error) {
+    console.error("Error creating article:", error);
+    res.status(500).json({ error: "Failed to create article" });
+  }
+});
 
+// Update an article
+router.put("/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { title, author, text, image } = req.body;
+
+  // Ensure at least one field is provided for an update
+  if (!title && !author && !text && !image) {
+    return res.status(400).json({ error: "At least one field is required to update" });
+  }
+
+  try {
+    // Prepare an update object dynamically
+    const updateData: Record<string, string> = {};
+    if (title) updateData.title = title;
+    if (author) updateData.author = author;
+    if (text) updateData.text = text;
+    if (image) updateData.image = image;
+
+    const updatedArticle = await ArticleRepository.update(Number(id), updateData);
+
+    if (!updatedArticle) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    res.status(200).json({ message: "Article updated successfully", updatedArticle });
+  } catch (error) {
+    console.error("Error updating article:", error);
+    res.status(500).json({ error: "Failed to update article" });
+  }
+});
+
+//Delete Article
+router.delete("/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const article = await ArticleRepository.findById(Number(id)); // Check if the article exists
     if (!article) {
       return res.status(404).json({ error: "Article not found" });
     }
 
-    res.json(article);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to retrieve the article" });
+    await ArticleRepository.delete(Number(id));
+    res.status(200).json({ message: "Article deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting article:", error);
+    res.status(500).json({ error: "Failed to delete article" });
   }
-});
-
-
-// Update an article by its ID
-router.put('/:articleId', async (req: Request, res: Response) => {
-  const articleId = parseInt(req.params.articleId);
-  const { title, author, text } = req.body;
-
-  if (isNaN(articleId)) {
-    return res.status(400).json({ error: "Invalid articleId. It must be a number." });
-  }
-  if (!title || !author || !text) {
-    return res.status(400).json({ error: "Title, Author, and Text are required to update an article." });
-  }
-
-  try {
-    const article = await ArticleRespository.findById(articleId);
-
-    if (!article) {
-      return res.status(404).json({ error: "Article not found" });
-    }
-
-    await ArticleRespository.update(articleId, title, author, text);
-    const updatedArticle = await ArticleRespository.findById(articleId);
-
-    res.json(updatedArticle);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to update the article" });
-  }
-});
-
-// Delete an article by its ID
-router.delete('/:articleId',  async (req: Request, res: Response) => {
-  const articleId = parseInt(req.params.articleId);
-
-  if (isNaN(articleId)) {
-    return res.status(400).json({ error: "Invalid articleId. It must be a number." });
-  }
-
-  try {
-    const article = await ArticleRespository.findById(articleId);
-
-    if (!article) {
-      return res.status(404).json({ error: "Article not found" });
-    }
-
-    await ArticleRespository.delete(articleId);
-    res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete the article" });
-  }
-});
-
-  //Getting latest articles
-router.get('/latest', async (req: Request, res: Response) => {
-  try {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
-    const articles = await ArticleRespository.findLatest(oneHourAgo);
-
-    res.status(200).json(articles.slice(0, 10));
-  } catch (err) {
-    console.error("Error in GET /latest:", err);
-    res.status(500).json({ error: "Failed to retrieve the latest articles" });
-  }
-});
-
-
-
-  // Create a new article withouth linking to a topic
-router.post('/', async (req: Request, res: Response) => {
-  const { title, author, text } = req.body;
-
-  if (!title || !author || !text) {
-    return res.status(400).json({ error: "Title, Author, and Text are required" });
-  }
-
-  try {
-  const newArticle = await ArticleRespository.create(title, author, text);
-  res.status(201).json(newArticle);
-} catch (err) {
-  res.status(500).json({ error: "Failed to create article" });
-}
 });
 
 export default router;
-
-
-
-

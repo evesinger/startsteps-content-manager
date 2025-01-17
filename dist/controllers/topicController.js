@@ -24,12 +24,16 @@ const sql = (0, postgres_1.default)({
 const router = express_1.default.Router();
 // Create a new topic
 router.post("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { title } = req.body;
+    const { title, description } = req.body;
     if (!title) {
         return res.status(400).json({ error: "Title is required" });
     }
     try {
-        const result = yield sql `INSERT INTO topics (title) VALUES (${title}) RETURNING *`;
+        const result = yield sql `
+      INSERT INTO topics (title, description)
+      VALUES (${title}, ${description || null})
+      RETURNING *;
+    `;
         res.status(201).json(result[0]);
     }
     catch (error) {
@@ -48,19 +52,51 @@ router.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.status(500).json({ error: "Failed to fetch topics" });
     }
 }));
-// Get a specific topic by ID
+//Update a topic by ID
+router.put("/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const { title, description } = req.body;
+    if (!title) {
+        return res.status(400).json({ error: "Title is required" });
+    }
+    try {
+        const result = yield sql `
+      UPDATE topics
+      SET title = ${title}, description = ${description || null}
+      WHERE id = ${id}
+      RETURNING *;
+    `;
+        if (!result.length) {
+            return res.status(404).json({ error: "Topic not found" });
+        }
+        res.status(200).json(result[0]);
+    }
+    catch (error) {
+        console.error("Error updating topic:", error);
+        res.status(500).json({ error: "Failed to update topic" });
+    }
+}));
+// Get a specific topic by ID, including its articles
 router.get("/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     try {
+        // Fetch the topic
         const topic = yield sql `SELECT * FROM topics WHERE id = ${id}`;
         if (!topic.length) {
             return res.status(404).json({ error: "Topic not found" });
         }
-        res.status(200).json(topic[0]);
+        // Fetch articles linked to the topic
+        const articles = yield sql `
+      SELECT * 
+      FROM articles 
+      WHERE topic_id = ${id};
+    `;
+        // Return the topic along with its articles
+        res.status(200).json(Object.assign(Object.assign({}, topic[0]), { articles }));
     }
     catch (error) {
-        console.error("Error fetching topic:", error);
-        res.status(500).json({ error: "Failed to fetch topic" });
+        console.error("Error fetching topic with articles:", error);
+        res.status(500).json({ error: "Failed to fetch topic with articles" });
     }
 }));
 // Delete a topic by ID
@@ -91,8 +127,12 @@ router.put("/:id/articles", (req, res) => __awaiter(void 0, void 0, void 0, func
         if (!topic.length) {
             return res.status(404).json({ error: "Topic not found" });
         }
-        // Link each article to the topic
-        const queries = articleIds.map((articleId) => sql `INSERT INTO topic_articles (topic_id, article_id) VALUES (${id}, ${articleId}) ON CONFLICT DO NOTHING`);
+        // Link each article to the topic by updating the topic_id
+        const queries = articleIds.map((articleId) => sql `
+        UPDATE articles
+        SET topic_id = ${id}
+        WHERE id = ${articleId};
+      `);
         yield Promise.all(queries);
         res.status(200).json({ message: "Articles linked to topic successfully" });
     }

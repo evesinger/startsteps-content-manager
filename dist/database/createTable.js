@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dbconfig_1 = __importDefault(require("../configs/dbconfig"));
 const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        console.log('Creating or updating database schema...');
+        // Create topics table
         console.log('Creating topics table...');
         yield (0, dbconfig_1.default) `
       CREATE TABLE IF NOT EXISTS topics (
@@ -23,17 +25,25 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
       );
     `;
         console.log('Topics table created successfully.');
-        console.log('Modifying articles table...');
+        // Create articles table
+        console.log('Creating articles table...');
         yield (0, dbconfig_1.default) `
-      ALTER TABLE articles
-      ADD COLUMN IF NOT EXISTS topic_id INT REFERENCES topics(id) ON DELETE SET NULL;
+      CREATE TABLE IF NOT EXISTS articles (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        author TEXT NOT NULL,
+        text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        topic_id INT REFERENCES topics(id) ON DELETE SET NULL
+      );
     `;
-        console.log('Articles table modified successfully.');
-        process.exit(0);
+        console.log('Articles table created successfully.');
+        console.log('Database schema created or updated successfully.');
+        process.exit(0); // Exit with success
     }
     catch (error) {
         console.error('Error creating tables:', error);
-        process.exit(1);
+        process.exit(1); // Exit with failure
     }
 });
 createTables();

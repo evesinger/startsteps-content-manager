@@ -12,50 +12,67 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ArticleRespository = void 0;
+exports.ArticleRepository = void 0;
 const dbconfig_1 = __importDefault(require("../configs/dbconfig"));
-class ArticleRespository {
+class ArticleRepository {
     static findAll() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield (0, dbconfig_1.default) `SELECT * FROM articles`;
+            return yield (0, dbconfig_1.default) `
+      SELECT id, title, author, text, image, created_at, topic_id 
+      FROM articles;
+    `;
         });
     }
     static findById(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const [article] = yield (0, dbconfig_1.default) `SELECT * FROM articles WHERE id = ${id}`;
+            const [article] = yield (0, dbconfig_1.default) `
+      SELECT id, title, author, text, image, created_at, topic_id 
+      FROM articles 
+      WHERE id = ${id};
+    `;
             return article;
         });
     }
-    static create(title, author, text) {
+    static create(title, author, text, image, topicId) {
         return __awaiter(this, void 0, void 0, function* () {
             const [newArticle] = yield (0, dbconfig_1.default) `
-    INSERT INTO articles (title, author, text, created_at)
-    VALUE (${title}, ${author}, ${text}
-    RETURNING *`;
+      INSERT INTO articles (title, author, text, image, topic_id, created_at)
+      VALUES (${title}, ${author}, ${text}, ${image}, ${topicId}, DEFAULT)
+      RETURNING *;
+    `;
             return newArticle;
         });
     }
-    static update(id, title, author, text) {
+    // Updated to support dynamic updates
+    static update(id, data) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield (0, dbconfig_1.default) `
-    UPDATE articles 
-    SET title = ${title}, author = ${author}, text = ${text}
-    WHERE id= ${id}`;
+            const keys = Object.keys(data);
+            const values = Object.values(data);
+            if (keys.length === 0) {
+                throw new Error("No fields to update");
+            }
+            // Dynamically construct the SET clause
+            const setClause = keys.map((key, index) => `${key} = $${index + 1}`).join(", ");
+            // Add the ID to the list of values
+            values.push(id);
+            // Execute the query
+            const query = `
+      UPDATE articles
+      SET ${setClause}
+      WHERE id = $${keys.length + 1}
+      RETURNING *;
+    `;
+            const [updatedArticle] = yield dbconfig_1.default.unsafe(query, values);
+            return updatedArticle;
         });
     }
     static delete(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield (0, dbconfig_1.default) `DELETE FROM articles WHERE id = ${id}`;
-        });
-    }
-    static findLatest(since) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield (0, dbconfig_1.default) `
-    SELECT * FROM articles 
-    WHERE created_at > ${since}
-    ORDER BY created_at DESC
-    LIMIT 10`;
+            yield (0, dbconfig_1.default) `
+      DELETE FROM articles 
+      WHERE id = ${id};
+    `;
         });
     }
 }
-exports.ArticleRespository = ArticleRespository;
+exports.ArticleRepository = ArticleRepository;
