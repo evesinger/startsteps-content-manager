@@ -14,8 +14,9 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // Register routes
-app.use('/topics', topicController); // Handles topic-related routes
-app.use('/articles', articleController); // Handles article-related routes
+app.use('/articles', articleController)
+app.use('/topics', topicController); 
+app.use('/articles', articleController); 
 
 
 export default app

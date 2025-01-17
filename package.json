@@ -1,11 +1,11 @@
 {
   "name": "startsteps-newsapp-be",
   "version": "1.0.0",
-  "description": "Imagine you want to build a news web app that shows articles by certain topics. What you need is: - a backend that manages articles and topics - a frontend that shows topics and articles",
+  "description": "Backend for a news app managing articles and topics.",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/index.js",
     "test": "jest"
   },
   "keywords": [],
@@ -27,10 +27,7 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "express": "^4.19.2"
   }
 }
