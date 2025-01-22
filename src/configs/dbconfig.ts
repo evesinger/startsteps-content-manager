@@ -1,7 +1,6 @@
 import postgres from "postgres";
 import dotenv from "dotenv";
 
-// Load environment variables from .env
 dotenv.config();
 
 const sql = postgres({

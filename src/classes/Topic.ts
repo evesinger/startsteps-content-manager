@@ -1,11 +1,10 @@
 export class Topic {
-  static topicCounter: number = 1;
   id: number;
   title: string;
   articleIds: number[]; 
 
-  constructor(title: string) {
-    this.id = Topic.topicCounter++,
+  constructor(id: number, title: string) {
+    this.id = id,
     this.title = title;
     this.articleIds = []; 
   }
@@ -19,3 +18,4 @@ export class Topic {
   }
 }
 
+// Keeping Topics Class for seperation of concerns and future scale the application with more complex data handling requirements.

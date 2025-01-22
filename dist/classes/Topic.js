@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Topic = void 0;
 class Topic {
-    constructor(title) {
-        this.id = Topic.topicCounter++,
+    constructor(id, title) {
+        this.id = id,
             this.title = title;
         this.articleIds = [];
     }
@@ -15,4 +15,4 @@ class Topic {
     }
 }
 exports.Topic = Topic;
-Topic.topicCounter = 1;
+// Keeping Topics Class for seperation of concerns and future scale the application with more complex data handling requirements.

@@ -1,24 +1,21 @@
-import validateArticleData from "../helpers";
 //import { Author } from "./Author";
 
 export class Article {
-  static articleCounter: number = 1;
   id: number;
   title: string;
   //author: Author;
   text: string;
+  views: number;
   createdAt: Date;
 
-  constructor(title: string, text: string, createdAt: Date) {
-    this.id = Article.articleCounter++;
+  constructor(id: number, title: string, text: string, views: number, createdAt: Date) {
+    this.id = id;
     this.title = title;
     //this.author = author;
     this.text = text;
+    this.views = views
     this.createdAt = createdAt
   }
-// Static function including helper function 
-  static create(title: string, text: string, createdAt: Date = new Date()): Article {
-    validateArticleData(title, text, createdAt);  
-    return new Article(title!, text!, createdAt);
-  }
 }
+
+// Keeping Article Class for seperation of concerns and future scale the application with more complex data handling requirements.
