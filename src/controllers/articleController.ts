@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { ArticleRepository } from '../repositories/ArticleRepository';
+import sql from '../configs/dbconfig';
 const router = express.Router();
 
 // Get all articles
@@ -44,6 +45,12 @@ router.post("/", async (req: Request, res: Response) => {
       image,
       topicId
     );
+
+    await sql`
+    INSERT INTO activitylog (type, entity_id, entity_name, action)
+    VALUES ('Article', ${newArticle.id}, ${newArticle.title}, 'CREATE');
+  `;
+  
     res.status(201).json(newArticle);
   } catch (error) {
     console.error("Error creating article:", error);
@@ -74,6 +81,10 @@ router.put("/:id", async (req: Request, res: Response) => {
     if (!updatedArticle) {
       return res.status(404).json({ error: "Article not found" });
     }
+    await sql`
+    INSERT INTO activitylog (type, entity_id, entity_name, action)
+    VALUES ('Article', ${updatedArticle.id}, ${updatedArticle.title}, 'UPDATE');
+  `;
 
     res.status(200).json({ message: "Article updated successfully", updatedArticle });
   } catch (error) {
@@ -93,6 +104,10 @@ router.delete("/:id", async (req: Request, res: Response) => {
     }
 
     await ArticleRepository.delete(Number(id));
+    await sql`
+    INSERT INTO activitylog (type, entity_id, entity_name, action)
+    VALUES ('Article', ${article.id}, ${article.title}, 'DELETE');
+  `;
     res.status(200).json({ message: "Article deleted successfully" });
   } catch (error) {
     console.error("Error deleting article:", error);

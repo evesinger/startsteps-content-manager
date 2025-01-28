@@ -3,6 +3,7 @@ import bodyParser from 'body-parser';
 import topicController from './controllers/topicController';
 import articleController from './controllers/articleController';
 import activityController from './controllers/activityController';
+import searchController from './controllers/searchController';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
@@ -18,6 +19,7 @@ app.use(cors());
 app.use('/topics', topicController); 
 app.use('/articles', articleController); 
 app.use('/activity', activityController);  
+app.use('/search', searchController);
 
 const port = process.env.PORT || 5550;
 
