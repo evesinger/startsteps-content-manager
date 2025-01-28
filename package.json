@@ -1,12 +1,12 @@
 {
   "name": "startsteps-newsapp-be",
   "version": "1.0.0",
-  "description": "Imagine you want to build a news web app that shows articles by certain topics. What you need is: - a backend that manages articles and topics - a frontend that shows topics and articles",
+  "description": "Backend for a news app managing articles and topics.",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "mocha -r ts-node/register test/**/*.ts"
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -14,14 +14,17 @@
   "devDependencies": {
     "@types/chai": "^4.3.19",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.14",
     "@types/mocha": "^10.0.7",
     "@types/node": "^22.5.0",
     "@types/supertest": "^6.0.2",
     "chai": "^5.1.1",
+    "jest": "^29.7.0",
     "mocha": "^10.7.3",
     "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.6.3"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

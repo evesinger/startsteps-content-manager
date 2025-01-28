@@ -104,6 +104,24 @@ Response:
   "articleIds": []
 }
 ```
+## Running Tests
+
+To ensure the application runs as expected, we have implemented comprehensive test coverage. Follow these steps to run the tests:
+
+- Install dependencies (if not already installed):
+
+```bash
+npm install
+```
+
+- Run the tests:
+
+``` bash
+npm test
+``` 
+
+
+This command will execute all tests defined in the tests folder using the configured test runner (e.g., Jest or Mocha). Ensure that all necessary dependencies are installed before running the tests.
 
 ## Folder Structure:
 ```bash
