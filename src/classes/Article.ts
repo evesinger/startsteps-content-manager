@@ -3,15 +3,15 @@
 export class Article {
   id: number;
   title: string;
-  //author: Author;
+  authorId: number;  // to store author ids
   text: string;
   views: number;
   createdAt: Date;
 
-  constructor(id: number, title: string, text: string, views: number, createdAt: Date) {
+  constructor(id: number, title: string, authorId: number, text: string, views: number, createdAt: Date) {
     this.id = id;
     this.title = title;
-    //this.author = author;
+    this.authorId = authorId;
     this.text = text;
     this.views = views
     this.createdAt = createdAt

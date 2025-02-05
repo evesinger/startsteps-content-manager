@@ -3,32 +3,36 @@ import sql from "../configs/dbconfig";
 export class ArticleRepository {
   static async findAll() {
     return await sql`
-      SELECT id, title, author, text, image, created_at, topic_id, views 
+      SELECT id, title, author_id, text, image, created_at, topic_id, views 
       FROM articles;
     `;
   }
 
   static async findById(id: number) {
     const [article] = await sql`
-      SELECT id, title, author, text, image, created_at, topic_id, views 
+      SELECT id, title, author_id, text, image, created_at, topic_id, views 
       FROM articles 
       WHERE id = ${id};
     `;
     return article;
   }
 
+  static async findByAuthorId(authorId: number) {
+    return await sql`SELECT * FROM articles WHERE author_id = ${authorId}`;
+  }
+
   // With random views for stats
   static async create(
     title: string,
-    author: string,
+    authorId: number, //now expercting a num
     text: string,
     image: string,
     topicId: number
   ) {
     // 0 views initially
     const [newArticle] = await sql`
-      INSERT INTO articles (title, author, text, image, topic_id, created_at, views)
-      VALUES (${title}, ${author}, ${text}, ${image}, ${topicId}, DEFAULT, 0)
+      INSERT INTO articles (title, author_id, text, image, topic_id, created_at, views)
+      VALUES (${title}, ${authorId}, ${text}, ${image}, ${topicId}, DEFAULT, 0)
       RETURNING *;
     `;
   
