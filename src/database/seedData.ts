@@ -8,19 +8,40 @@ const seedDatabase = async () => {
     console.log('Clearing old data...');
     await sql`TRUNCATE TABLE articles RESTART IDENTITY CASCADE;`;
     await sql`TRUNCATE TABLE topics RESTART IDENTITY CASCADE;`;
-    await sql`TRUNCATE TABLE activitylog RESTART IDENTITY CASCADE;`;
+    await sql`TRUNCATE TABLE activity_log RESTART IDENTITY CASCADE;`;
+    await sql `TURNCATE TABLE authors RESTART IDENTITY CASCADE;`;
     console.log('Old data cleared.');
+
+    const simplePassword = "kaching12345!"
+
+      // Insert authors
+      const authors = await sql`
+      INSERT INTO authors (first_name, last_name, email, profile_image, password)
+      VALUES 
+      ('Jane', 'Doe', 'jane.doe@example.com', 'https://randomuser.me/api/portraits/women/1.jpg', ${simplePassword}),
+      ('John', 'Smith', 'john.smith@example.com', 'https://randomuser.me/api/portraits/men/1.jpg', ${simplePassword}),
+      ('Emily', 'Brown', 'emily.brown@example.com', 'https://randomuser.me/api/portraits/women/2.jpg', ${simplePassword}),
+      ('Michael', 'Johnson', 'michael.johnson@example.com', 'https://randomuser.me/api/portraits/men/2.jpg', ${simplePassword}),
+      ('Sophia', 'Taylor', 'sophia.taylor@example.com', 'https://randomuser.me/api/portraits/women/3.jpg', ${simplePassword})
+      RETURNING id, first_name, last_name;
+    `;
+    console.log('Inserted authors:', authors);
+
+        // Create a mapping of author names to author IDs
+        const authorMap = Object.fromEntries(authors.map((author) => [
+          `${author.first_name} ${author.last_name}`, author.id
+        ]));
 
 // Insert topics
     console.log('Inserting topics...');
     const topics = await sql`
-      INSERT INTO topics (title)
+      INSERT INTO topics (title, description, created_at)
       VALUES 
-        ('Technology'),
-        ('Science'),
-        ('Sport'),
-        ('Beauty'),
-        ('Politics')
+        ('Technology', 'All things technology'),
+        ('Science', 'All things science'),
+        ('Sport', 'All things sports'),
+        ('Beauty', 'All things beauty'),
+        ('Politics', 'All things politics')
       RETURNING *;
     `;
     console.log('Inserted topics:', topics);
@@ -29,8 +50,8 @@ const seedDatabase = async () => {
     console.log('Logging topic creation in ActivityLog...');
     for (const topic of topics) {
       await sql`
-        INSERT INTO activitylog (type, entity_id, entity_name, action)
-        VALUES ('Topic Created', ${topic.id}, ${topic.title}, 'CREATE');
+        INSERT INTO activitylog (type, entity_id, entity_name, author_id, author_first_name, author_last_name, action)
+        VALUES ('Topic Created', ${topic.id}, ${topic.title}, NULL, NULL, 'CREATE');
       `;
     }
     console.log('ActivityLog updated for topics.');
@@ -38,11 +59,11 @@ const seedDatabase = async () => {
 // insert articles
     console.log('Inserting articles...');
     const articles = await sql`
-      INSERT INTO articles (title, author, text, image, topic_id, views)
+      INSERT INTO articles (title, author_id, text, image, topic_id, views)
       VALUES 
-        ('Talking Robots: AI in Futurama', 'Bender the robot', 'Exploring the latest in AI, as seen in Futurama.', 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', ${topics[0].id}, ${Math.floor(Math.random() * 1001)}),
-        ('Moonlanding vs UFOs: What NASA Knows', 'NASA', 'Mars missions update with some thoughts on UFO encounters.', 'https://images.pexels.com/photos/8474990/pexels-photo-8474990.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', ${topics[1].id}, ${Math.floor(Math.random() * 1001)}),
-        ('What is Modern Art? A Digital Revolution', 'Monet', 'Exploring the rise of digital art and how technology is changing creativity.', 'https://images.pexels.com/photos/5033989/pexels-photo-5033989.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', ${topics[4].id}, ${Math.floor(Math.random() * 1001)}),
+        ('Talking Robots: AI in Futurama',  ${authorMap['Jane Doe']}, 'Exploring the latest in AI, as seen in Futurama.', 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', ${topics[0].id}, ${Math.floor(Math.random() * 1001)}),
+        ('Moonlanding vs UFOs: What NASA Knows',  ${authorMap['John Smith']}, 'Mars missions update with some thoughts on UFO encounters.', 'https://images.pexels.com/photos/8474990/pexels-photo-8474990.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', ${topics[1].id}, ${Math.floor(Math.random() * 1001)}),
+        ('What is Modern Art? A Digital Revolution',  ${authorMap['Michael Johsnon']}, 'Exploring the rise of digital art and how technology is changing creativity.', 'https://images.pexels.com/photos/5033989/pexels-photo-5033989.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', ${topics[4].id}, ${Math.floor(Math.random() * 1001)}),
         ('Messi or Ronaldo: The Eternal Debate', 'FC Bayern', 'Analyzing the impact of these football legends on the sport.', 'https://images.pexels.com/photos/2413089/pexels-photo-2413089.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', ${topics[2].id}, ${Math.floor(Math.random() * 1001)}),
         ('Hungarian Waterpolo: A Victory at the Olympics', 'Rudi Kapitany', 'How Hungary dominated in waterpolo during the Olympics.', 'https://images.pexels.com/photos/863988/pexels-photo-863988.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', ${topics[2].id}, ${Math.floor(Math.random() * 1001)}),
         ('The Future of Cosmetics: Beauty Tech on the Rise', 'Beauty Insider', 'How technology is transforming the beauty industry.', 'https://plugins-media.makeupar.com/smb/blog/post/2021-01-28/3ede8f17-1e11-4770-beff-bb029794f560.jpg', ${topics[3].id}, ${Math.floor(Math.random() * 1001)}),
