@@ -1,5 +1,13 @@
 import sql from '../configs/dbconfig';
 
+interface Author {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
+const JAVA_BACKEND_URL = 'http://localhost:8080/authors'; // Update with your actual Java API URL
+
 const seedDatabase = async () => {
   try {
     console.log('Starting database seeding...');
@@ -8,30 +16,22 @@ const seedDatabase = async () => {
     console.log('Clearing old data...');
     await sql`TRUNCATE TABLE articles RESTART IDENTITY CASCADE;`;
     await sql`TRUNCATE TABLE topics RESTART IDENTITY CASCADE;`;
-    await sql`TRUNCATE TABLE activity_log RESTART IDENTITY CASCADE;`; // Fixed table name
-    await sql`TRUNCATE TABLE authors RESTART IDENTITY CASCADE;`;
+    await sql`TRUNCATE TABLE activity_log RESTART IDENTITY CASCADE;`;
     console.log('Old data cleared.');
 
-    //Password as text 
-    const simplePassword = "kaching12345!"
-
-
-    // Insert authors
-    const authors = await sql`
-      INSERT INTO authors (first_name, last_name, email, profile_image, password)
-      VALUES 
-      ('Jane', 'Doe', 'jane.doe@example.com', 'https://randomuser.me/api/portraits/women/1.jpg', ${simplePassword}),
-      ('John', 'Smith', 'john.smith@example.com', 'https://randomuser.me/api/portraits/men/1.jpg', ${simplePassword}),
-      ('Emily', 'Brown', 'emily.brown@example.com', 'https://randomuser.me/api/portraits/women/2.jpg', ${simplePassword}),
-      ('Michael', 'Johnson', 'michael.johnson@example.com', 'https://randomuser.me/api/portraits/men/2.jpg', ${simplePassword}),
-      ('Sophia', 'Taylor', 'sophia.taylor@example.com', 'https://randomuser.me/api/portraits/women/3.jpg', ${simplePassword})
-      RETURNING id, first_name, last_name;
-    `;
-    console.log('Inserted authors:', authors);
+        // Fetch authors from Java backend
+        console.log('Fetching authors from Java backend...');
+        const authorResponse = await fetch(JAVA_BACKEND_URL);
+        if (!authorResponse.ok) {
+          throw new Error('Failed to fetch authors from Java backend.');
+        }
+        const authors: Author[] = await authorResponse.json();
+        console.log('Fetched authors:', authors);
+    
 
     // Create a mapping of author names to author IDs
     const authorMap = Object.fromEntries(authors.map((author) => [
-      `${author.first_name} ${author.last_name}`, author.id
+      `${author.firstName} ${author.lastName}`, author.id
     ]));
 
     // Insert topics
@@ -52,9 +52,9 @@ const seedDatabase = async () => {
     console.log('Logging topic creation in ActivityLog...');
     for (const topic of topics) {
       await sql`
-        INSERT INTO activity_log (type, entity_id, entity_name, author_id, author_name, action)
-        VALUES ('Topic', ${topic.id}, ${topic.title}, NULL, NULL, 'CREATE');
-      `;
+      INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+      VALUES (${topic.id}, 'Topic', NULL, 'CREATE', NOW());
+    `;
     }
     console.log('ActivityLog updated for topics.');
 
@@ -82,9 +82,9 @@ const seedDatabase = async () => {
       const authorName = Object.keys(authorMap).find(name => authorMap[name] === authorId) || 'Unknown';
 
       await sql`
-        INSERT INTO activity_log (type, entity_id, entity_name, author_id, author_name, action)
-        VALUES ('Article', ${article.id}, ${article.title}, ${authorId}, ${authorName}, 'CREATE');
-      `;
+      INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+      VALUES (${article.id}, 'Article', ${article.author_id}, 'CREATE', NOW());
+    `;
     }
     console.log('ActivityLog updated for articles.');
 

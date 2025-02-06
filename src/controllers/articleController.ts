@@ -4,7 +4,6 @@ import sql from '../configs/dbconfig';
 
 const router = express.Router();
 
-// Get all articles
 // Get all articles (OR filter by author_id)
 router.get("/", async (req: Request, res: Response) => {
   try {
@@ -13,7 +12,7 @@ router.get("/", async (req: Request, res: Response) => {
     let articles;
     if (author_id) {
       console.log(`Fetching articles for author ID: ${author_id}`);
-      articles = await sql`SELECT * FROM articles WHERE author_id = ${Number(author_id)}`; // ✅ Filter articles by author_id
+      articles = await sql`SELECT * FROM articles WHERE author_id = ${Number(author_id)}`; // Filter articles by author_id
     } else {
       articles = await sql`SELECT * FROM articles`; // ✅ If no author_id, return all articles
     }
@@ -24,7 +23,6 @@ router.get("/", async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message || "Failed to fetch articles" });
   }
 });
-
 
 
 // Get an article by ID
@@ -51,9 +49,9 @@ router.post("/", async (req: Request, res: Response) => {
   }
 
   try {
-    // Validate author and topic exist
-    const author = await sql`SELECT * FROM authors WHERE id = ${author_id}`;
-    if (!author.length) {
+    // Validate author exists (now fetched from Java backend)
+    const authorResponse = await fetch(`http://localhost:8080/authors/${author_id}`);
+    if (!authorResponse.ok) {
       return res.status(400).json({ error: "Invalid author ID" });
     }
 
@@ -62,17 +60,17 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid topic ID" });
     }
 
-    const newArticle = await ArticleRepository.create(
-      title,
-      author_id,
-      text,
-      image,
-      topic_id
-    );
+    // Insert article with explicit created_at timestamp
+    const [newArticle] = await sql`
+      INSERT INTO articles (title, author_id, text, image, views, created_at, topic_id)
+      VALUES (${title}, ${author_id}, ${text}, ${image}, 0, NOW(), ${topic_id})
+      RETURNING *;
+    `;
 
+    // Insert into activity_log
     await sql`
-      INSERT INTO activity_log (type, entity_id, entity_name, action, author_id)
-      VALUES ('Article', ${newArticle.id}, ${newArticle.title}, 'CREATE', ${author_id});
+      INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+      VALUES (${newArticle.id}, 'Article', ${author_id}, 'CREATE', NOW());
     `;
 
     res.status(201).json(newArticle);
@@ -81,6 +79,7 @@ router.post("/", async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message || "Failed to create article" });
   }
 });
+
 
 // Update an article
 router.put("/:id", async (req: Request, res: Response) => {
@@ -96,8 +95,13 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 
   try {
-    const article = await ArticleRepository.findById(Number(id));
+    // Validate author exists (now fetched from Java backend)
+    const authorResponse = await fetch(`http://localhost:8080/authors/${author_id}`);
+    if (!authorResponse.ok) {
+      return res.status(400).json({ error: "Invalid author ID" });
+    }
 
+    const article = await ArticleRepository.findById(Number(id));
     if (!article) {
       return res.status(404).json({ error: "Article not found" });
     }
@@ -114,11 +118,11 @@ router.put("/:id", async (req: Request, res: Response) => {
 
     const updatedArticle = await ArticleRepository.update(Number(id), updateData);
 
+    // Log the update action with timestamp
     await sql`
-      INSERT INTO activity_log (type, entity_id, entity_name, action)
-      VALUES ('Article', ${updatedArticle.id}, ${updatedArticle.title}, 'UPDATE');
-    `;
-
+    INSERT INTO activity_log (entity_id, type, author_id, action, updated_at)
+    VALUES (${updatedArticle.id}, 'Article', ${author_id}, 'UPDATE', NOW());
+  `;
     res.status(200).json({ message: "Article updated successfully", updatedArticle });
   } catch (error: any) {
     console.error("Error updating article:", error);
@@ -136,8 +140,13 @@ router.delete("/:id", async (req: Request, res: Response) => {
   }
 
   try {
-    const article = await ArticleRepository.findById(Number(id));
+    // Validate author exists (now fetched from Java backend)
+    const authorResponse = await fetch(`http://localhost:8080/authors/${author_id}`);
+    if (!authorResponse.ok) {
+      return res.status(400).json({ error: "Invalid author ID" });
+    }
 
+    const article = await ArticleRepository.findById(Number(id));
     if (!article) {
       return res.status(404).json({ error: "Article not found" });
     }
@@ -149,10 +158,11 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     await ArticleRepository.delete(Number(id));
 
+    // Log the delete action with timestamp
     await sql`
-      INSERT INTO activity_log (type, entity_id, entity_name, action)
-      VALUES ('Article', ${article.id}, ${article.title}, 'DELETE');
-    `;
+    INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+    VALUES (${id}, 'Article', ${author_id}, 'DELETE', NOW());
+  `;
 
     res.status(200).json({ message: "Article deleted successfully" });
   } catch (error: any) {
@@ -160,5 +170,6 @@ router.delete("/:id", async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message || "Failed to delete article" });
   }
 });
+
 
 export default router;

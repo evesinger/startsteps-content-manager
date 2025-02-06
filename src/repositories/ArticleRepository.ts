@@ -83,9 +83,18 @@ export class ArticleRepository {
   }
 
   static async delete(id: number) {
+    // First, update `deleted_at` before deleting
+    await sql`
+      UPDATE articles 
+      SET deleted_at = NOW() 
+      WHERE id = ${id};
+    `;
+  
+    // Then, permanently delete the article
     await sql`
       DELETE FROM articles 
       WHERE id = ${id};
     `;
   }
+  
 }
