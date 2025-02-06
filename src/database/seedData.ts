@@ -1,4 +1,4 @@
-import sql from '../configs/dbconfig';
+import sql from "../configs/dbconfig";
 
 interface Author {
   id: number;
@@ -6,92 +6,124 @@ interface Author {
   lastName: string;
 }
 
-const JAVA_BACKEND_URL = 'http://localhost:8080/authors'; // Update with your actual Java API URL
+const JAVA_BACKEND_URL = "http://localhost:8080/authors"; // Java backend for fetching authors
+const CHIEF_EDITOR_ID = 2; // ✅ Chief Editor ID for seeding
 
 const seedDatabase = async () => {
   try {
-    console.log('Starting database seeding...');
+    console.log("🚀 Starting database seeding...");
 
     // Clear existing data
-    console.log('Clearing old data...');
+    console.log("🗑 Clearing old data...");
     await sql`TRUNCATE TABLE articles RESTART IDENTITY CASCADE;`;
     await sql`TRUNCATE TABLE topics RESTART IDENTITY CASCADE;`;
     await sql`TRUNCATE TABLE activity_log RESTART IDENTITY CASCADE;`;
-    console.log('Old data cleared.');
+    console.log("✅ Old data cleared.");
 
-        // Fetch authors from Java backend
-        console.log('Fetching authors from Java backend...');
-        const authorResponse = await fetch(JAVA_BACKEND_URL);
-        if (!authorResponse.ok) {
-          throw new Error('Failed to fetch authors from Java backend.');
-        }
-        const authors: Author[] = await authorResponse.json();
-        console.log('Fetched authors:', authors);
-    
+    // Fetch authors from Java backend
+    console.log("🔄 Fetching authors from Java backend...");
+    const authorResponse = await fetch(JAVA_BACKEND_URL);
+    if (!authorResponse.ok) {
+      throw new Error("❌ Failed to fetch authors from Java backend.");
+    }
+    const authors: Author[] = await authorResponse.json();
+    console.log("✅ Fetched authors:", authors);
 
-    // Create a mapping of author names to author IDs
-    const authorMap = Object.fromEntries(authors.map((author) => [
-      `${author.firstName} ${author.lastName}`, author.id
-    ]));
+    // Create a mapping of author IDs by first & last name
+    const authorMap = new Map();
+    authors.forEach((author) => {
+      const fullName = `${author.firstName.trim()} ${author.lastName.trim()}`;
+      authorMap.set(fullName, author.id);
+    });
+    console.log("✅ Author Map:", authorMap);
 
-    // Insert topics
-    console.log('Seeding topics...');
+    // Convert authorMap to an array for random selection
+    const authorIds = Array.from(authorMap.values());
+
+    if (authorIds.length === 0) {
+      throw new Error("❌ No authors were found! Stopping seeding process.");
+    }
+
+    // Insert topics with created_by
+    console.log("📝 Seeding topics...");
     const topics = await sql`
-      INSERT INTO topics (title)
+      INSERT INTO topics (title, description, created_by)
       VALUES 
-        ('Technology'),
-        ('Science'),
-        ('Sport'),
-        ('Beauty'),
-        ('Politics')
+        ('Technology', 'Latest in tech', ${CHIEF_EDITOR_ID}),
+        ('Science', 'New discoveries', ${CHIEF_EDITOR_ID}),
+        ('Sport', 'Sports updates', ${CHIEF_EDITOR_ID}),
+        ('Beauty', 'Fashion & cosmetics', ${CHIEF_EDITOR_ID}),
+        ('Politics', 'World politics', ${CHIEF_EDITOR_ID})
       RETURNING id, title;
     `;
-    console.log('Inserted topics:', topics);
+    console.log("✅ Inserted topics:", topics);
+
+    // Ensure topics exist
+    if (topics.length === 0) {
+      throw new Error("❌ No topics were inserted! Stopping seeding process.");
+    }
 
     // Log topic creation in ActivityLog
-    console.log('Logging topic creation in ActivityLog...');
+    console.log("📜 Logging topic creation in ActivityLog...");
     for (const topic of topics) {
       await sql`
-      INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
-      VALUES (${topic.id}, 'Topic', NULL, 'CREATE', NOW());
-    `;
+        INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+        VALUES (${topic.id}, 'Topic', ${CHIEF_EDITOR_ID}, 'CREATE', NOW());
+      `;
     }
-    console.log('ActivityLog updated for topics.');
+    console.log("✅ ActivityLog updated for topics.");
 
-    // Insert articles
-    console.log('Seeding articles...');
-    const articles = await sql`
-      INSERT INTO articles (title, author_id, text, image, topic_id, views)
-      VALUES 
-        ('Talking Robots: AI in Futurama', ${authorMap['Jane Doe']}, 'Exploring the latest in AI.', 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg', ${topics[0].id}, ${Math.floor(Math.random() * 1001)}),
-        ('Moonlanding vs UFOs: What NASA Knows', ${authorMap['John Smith']}, 'Mars missions update with UFO theories.', 'https://images.pexels.com/photos/8474990/pexels-photo-8474990.jpeg', ${topics[1].id}, ${Math.floor(Math.random() * 1001)}),
-        ('Messi or Ronaldo: The Eternal Debate', ${authorMap['Michael Johnson']}, 'Analyzing football legends.', 'https://images.pexels.com/photos/2413089/pexels-photo-2413089.jpeg', ${topics[2].id}, ${Math.floor(Math.random() * 1001)}),
-        ('The Future of Cosmetics', ${authorMap['Sophia Taylor']}, 'How technology is transforming beauty.', 'https://plugins-media.makeupar.com/smb/blog/post/2021-01-28/3ede8f17-1e11-4770-beff-bb029794f560.jpg', ${topics[3].id}, ${Math.floor(Math.random() * 1001)}),
-        ('The Politics of Climate Change', ${authorMap['Emily Brown']}, 'How politics affects climate policies.', 'https://img.freepik.com/free-photo/climate-change-with-dry-soil_23-2149217819.jpg', ${topics[4].id}, ${Math.floor(Math.random() * 1001)}),
-        ('The Rise of E-sports', ${authorMap['John Smith']}, 'Exploring competitive gaming.', 'https://plus.unsplash.com/premium_photo-1683141331949-64810cfc4ca3', ${topics[2].id}, ${Math.floor(Math.random() * 1001)}),
-        ('AI in Sports Coaching', ${authorMap['Jane Doe']}, 'How AI is transforming sports.', 'https://www.unite.ai/wp-content/uploads/2024/03/Football.webp', ${topics[0].id}, ${Math.floor(Math.random() * 1001)}),
-        ('Memes in Politics', ${authorMap['Michael Johnson']}, 'The role of memes in elections.', 'https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg', ${topics[4].id}, ${Math.floor(Math.random() * 1001)})
-      RETURNING id, title, author_id;
-    `;
-    console.log('Inserted articles:', articles);
+    // Define article templates (without hardcoded authors)
+    const articlesData = [
+      { title: "Talking Robots: AI in Futurama", text: "Exploring the latest in AI.", image: "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg", topicTitle: "Technology" },
+      { title: "Moonlanding vs UFOs: What NASA Knows", text: "Mars missions update with UFO theories.", image: "https://images.pexels.com/photos/8474990/pexels-photo-8474990.jpeg", topicTitle: "Science" },
+      { title: "Messi or Ronaldo: The Eternal Debate", text: "Analyzing football legends.", image: "https://images.pexels.com/photos/2413089/pexels-photo-2413089.jpeg", topicTitle: "Sport" },
+      { title: "The Future of Cosmetics", text: "How technology is transforming beauty.", image: "https://plugins-media.makeupar.com/smb/blog/post/2021-01-28/3ede8f17-1e11-4770-beff-bb029794f560.jpg", topicTitle: "Beauty" },
+      { title: "The Politics of Climate Change", text: "How politics affects climate policies.", image: "https://img.freepik.com/free-photo/climate-change-with-dry-soil_23-2149217819.jpg", topicTitle: "Politics" }
+    ];
 
-    // Log article creation in ActivityLog
-    console.log('Logging article creation in ActivityLog...');
-    for (const article of articles) {
-      const authorId = article.author_id;
-      const authorName = Object.keys(authorMap).find(name => authorMap[name] === authorId) || 'Unknown';
+    console.log("📝 Seeding articles...");
+    for (const article of articlesData) {
+      // Select a random author ID from `authorIds`
+      const authorId = authorIds[Math.floor(Math.random() * authorIds.length)];
 
+      // Find the topic by name
+      const topic = topics.find((t) => t.title === article.topicTitle);
+
+      console.log(`🔎 Processing article: ${article.title}`);
+      console.log(`   → Selected Author ID: ${authorId}`);
+      console.log(`   → Topic: ${article.topicTitle} (ID: ${topic?.id})`);
+
+      if (!authorId) {
+        console.error(`❌ Error: No author_id found. Skipping article.`);
+        continue;
+      }
+
+      if (!topic) {
+        console.error(`❌ Error: No topic_id found for ${article.topicTitle}. Skipping article.`);
+        continue;
+      }
+
+      // Insert article
+      const [newArticle] = await sql`
+        INSERT INTO articles (title, author_id, created_by, text, image, topic_id, created_at, views)
+        VALUES (${article.title}, ${authorId}, ${CHIEF_EDITOR_ID}, ${article.text}, ${article.image}, ${topic.id}, NOW(), 0)
+        RETURNING *;
+      `;
+      console.log(`✅ Inserted article: ${newArticle.title} (ID: ${newArticle.id})`);
+
+      // Log article creation in ActivityLog
       await sql`
-      INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
-      VALUES (${article.id}, 'Article', ${article.author_id}, 'CREATE', NOW());
-    `;
+        INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+        VALUES (${newArticle.id}, 'Article', ${newArticle.author_id}, 'CREATE', NOW());
+      `;
     }
-    console.log('ActivityLog updated for articles.');
 
-    console.log('Database seeding completed successfully.');
+    console.log("✅ ActivityLog updated for articles.");
+    console.log("🎉 Database seeding completed successfully.");
     process.exit(0);
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error("❌ Error seeding database:", error);
     process.exit(1);
   }
 };

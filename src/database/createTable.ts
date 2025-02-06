@@ -1,60 +1,68 @@
-import sql from '../configs/dbconfig';
+import sql from "../configs/dbconfig";
 
 const createTables = async () => {
   try {
-    console.log('Creating or updating database schema...');
+    console.log("🛠 Creating or updating database schema...");
 
-    // Topics Table
-    console.log('Creating topics table...');
+    // ✅ Ensure tables are created first before truncating
+    console.log("📝 Creating topics table...");
     await sql`
       CREATE TABLE IF NOT EXISTS topics (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL UNIQUE, 
-        description TEXT
+        description TEXT NULL,
+        created_by INT NOT NULL, -- ✅ Chief Editor ID (should exist in Java)
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP NULL DEFAULT NULL,
+        deleted_at TIMESTAMP NULL DEFAULT NULL
       );
     `;
-    console.log('Topics table created successfully.');
+    console.log("✅ Topics table created successfully.");
 
-    // Articles Table (References authors by ID but no foreign key constraint)
-    console.log('Creating articles table...');
+    console.log("📝 Creating articles table...");
     await sql`
       CREATE TABLE IF NOT EXISTS articles (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
-        author_id INT NOT NULL,
+        author_id INT NOT NULL, -- ✅ Refers to Java authors but no constraint
+        created_by INT NOT NULL, -- ✅ Chief Editor ID (should exist in Java)
         text TEXT NOT NULL,
-        image TEXT, 
+        image TEXT NULL, 
         views INT DEFAULT 0, 
-        created_at TIMESTAMP NULL, -- ✅ NULL by default, will be set on INSERT
-        updated_at TIMESTAMP NULL, -- ✅ Tracks last modification
-        deleted_at TIMESTAMP NULL, -- ✅ Tracks when the article was deleted
+        created_at TIMESTAMP NULL DEFAULT NULL, -- ✅ Set explicitly on creation
+        updated_at TIMESTAMP NULL DEFAULT NULL, -- ✅ Tracks modifications
+        deleted_at TIMESTAMP NULL DEFAULT NULL, -- ✅ Soft deletion tracking
         topic_id INT REFERENCES topics(id) ON DELETE SET NULL
       );
     `;
-    console.log('Articles table created successfully.');
-    
+    console.log("✅ Articles table created successfully.");
 
-    // Activity Log Table
-    console.log('Creating activity_log table...');
+    console.log("📝 Creating activity_log table...");
     await sql`
       CREATE TABLE IF NOT EXISTS activity_log (
         id SERIAL PRIMARY KEY,
-        entity_id INT NOT NULL, -- ID of the article or topic
-        type VARCHAR(50) NOT NULL, -- e.g., "Article", "Topic"
-        author_id INT NOT NULL, -- Store author ID but no foreign key constraint
-        action VARCHAR(50) NOT NULL, -- e.g., "CREATE", "UPDATE", "DELETE"
-        created_at TIMESTAMP DEFAULT NOW(), -- When the action happened
-        updated_at TIMESTAMP NULL, -- When the entity was last updated
-        deleted_at TIMESTAMP NULL  -- When the entity was deleted
+        entity_id INT NOT NULL, -- ✅ ID of the affected entity (article/topic)
+        type VARCHAR(50) NOT NULL, -- ✅ "Article" or "Topic"
+        author_id INT, -- ✅ Refers to Java authors but no FK constraint
+        action VARCHAR(50) NOT NULL, -- ✅ "CREATE", "UPDATE", "DELETE"
+        created_at TIMESTAMP DEFAULT NOW(), -- ✅ Timestamp when action occurred
+        updated_at TIMESTAMP NULL DEFAULT NULL, -- ✅ Last modification timestamp
+        deleted_at TIMESTAMP NULL DEFAULT NULL  -- ✅ Soft deletion timestamp
       );
     `;
-    console.log('ActivityLog table created successfully.');
-    
+    console.log("✅ Activity Log table created successfully.");
 
-    console.log('Database schema created or updated successfully.');
+    // ✅ Now truncate existing data safely
+    console.log("🗑 Clearing old data...");
+    await sql`TRUNCATE TABLE activity_log RESTART IDENTITY CASCADE;`;
+    await sql`TRUNCATE TABLE articles RESTART IDENTITY CASCADE;`;
+    await sql`TRUNCATE TABLE topics RESTART IDENTITY CASCADE;`;
+    console.log("✅ Old data cleared.");
+
+    console.log("🎉 Database schema created or updated successfully.");
     process.exit(0);
   } catch (error) {
-    console.error('Error creating tables:', error);
+    console.error("❌ Error creating tables:", error);
     process.exit(1);
   }
 };
