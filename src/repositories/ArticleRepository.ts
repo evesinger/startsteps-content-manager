@@ -31,9 +31,9 @@ export class ArticleRepository {
   ) {
     // 0 views initially
     const [newArticle] = await sql`
-      INSERT INTO articles (title, author_id, text, image, topic_id, created_at, views)
-      VALUES (${title}, ${authorId}, ${text}, ${image}, ${topicId}, DEFAULT, 0)
-      RETURNING *;
+    INSERT INTO articles (title, author_id, text, image, topic_id, created_at, views)
+    VALUES (${title}, ${authorId}, ${text}, ${image}, ${topicId}, NOW(), 0) -- ✅ Explicitly setting created_at
+    RETURNING *;
     `;
   
     //update views after 5 seconds to show on demo

@@ -25,7 +25,9 @@ const createTables = async () => {
         text TEXT NOT NULL,
         image TEXT, 
         views INT DEFAULT 0, 
-        created_at TIMESTAMP NULL,
+        created_at TIMESTAMP NULL, -- ✅ NULL by default, will be set on INSERT
+        updated_at TIMESTAMP NULL, -- ✅ Tracks last modification
+        deleted_at TIMESTAMP NULL, -- ✅ Tracks when the article was deleted
         topic_id INT REFERENCES topics(id) ON DELETE SET NULL
       );
     `;
