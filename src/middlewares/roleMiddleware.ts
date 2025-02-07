@@ -15,10 +15,12 @@ export const roleMiddleware = (requiredRole?: string) => {
     console.log("📌 Required Role:", requiredRole);
 
     if (!authorId || !role) {
+      console.error("❌ Missing authentication headers");
       return res.status(401).json({ message: "Unauthorized: Missing credentials" });
     }
 
-    if (requiredRole && role !== requiredRole) {
+    if (requiredRole && role.toUpperCase() !== requiredRole.toUpperCase()) {
+      console.error("❌ Access Denied: Insufficient privileges");
       return res.status(403).json({ message: "Access denied: Insufficient privileges" });
     }
 
