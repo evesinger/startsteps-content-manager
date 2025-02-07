@@ -1,3 +1,4 @@
+//Using Postgres instead of SQLITE
 import postgres from "postgres";
 import dotenv from "dotenv";
 
