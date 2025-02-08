@@ -12,4 +12,4 @@ const sql = postgres({
     password: process.env.DB_PASSWORD || "postgres"
 });
 
-export default sql;
+export default sql

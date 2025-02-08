@@ -4,109 +4,98 @@ News Portal Management System
 
 ## Overview
 
-This is a RESTful **News Management System** that supports operations for managing topics, articles, authors, and activity logs.
-The system has 2 service: 
+This is project is part of a RESTful **News Management System** that supports operations for managing topics, articles, authors, and activity logs.
 
-- **Content Management**: built by NodeJS, Typescript and ExpressJS
-  
-- **Author and Auth Service**: built by Java Springboot
+This project is the **Content Management Service**, which is built by NodeJS, Typescript and ExpressJS.
 
 
 ### Features:
 
-- Management of topics (CRUD)
+- Role based management of Topics (CRUD)
 
-- Management of articles (CRUD)
+- Role based management of Articles (CRUD)
   
-- Management of authors (CRUD)
+- Role based Activity Log of all actions on the platform
   
-- Activity Log of all actions on the platform
-
-- Web/Tablet/Mobile news dashboard preview
+- Analytics dashboard 
   
-- Analytics dashboard
+- Search controller
   
-- User login/registration 
-
-- User profile page 
-  
-- Author ID based authentication and authorization
 
 
 ### User Roles:
-Differrent user have different accesses to the platform.
+Differrent user have different accesses to content management:
 
 - **Chief Editors:** 
-  Full access to manage authors, articles, topics, and view analytics. 
+  Full access to manage articles, topics, and view analytics. 
   Can see all activities in the activity log.
   Can view all analytics.
-  Can view any authors profile. 
   <br>
 
 - **Authors**: 
-  Limited access to manage only their own articles and view personal analytics.
-  Can view only their own profile.
+  Limited access to manage only their own articles and view their own activity-log.
 
 
 
 ### Requirements:
 
-- **Node.js/Express.js**  (Backend API for topics and articles)
+- **Node.js/Express.js**  (Backend API for topics,  articles and activity)
 
 - **TypeScript** (Type safety and better development experience)
 
-- **Spring Boot (Java)** (Microservice for authentication and author management)
-
 - **PostgreSQL** (Database for persistent storage)
 
-- **JEST** for unit testing
+- **JEST** (for unit testing)
 
 ### Installation:
 
-Clone the git repo
+#### Clone the git repo
 ```bash
 clone cd news-portal-management-system
 ```
 
-Install Dependencies
+#### Install Dependencies
 ```bash
 npm install
 ```
 
-Install TypeScript
+#### Install TypeScript
 ```bash
 npm install -g typescript
 ```
 
-Compile TypeScript to JavaScript
+#### Compile TypeScript to JavaScript
 ```bash
 tsc
 ```
-Setting up the Local Database: 
+#### Setting up the Local Database: 
 
-1. Start PostgreSQL
+**1. Start PostgreSQL**
   
 ```bash
 pg_ctl -D /usr/local/var/postgres start
 ```
 
-2. Connect to the Database
+**2. Connect to the Database**
 ```bash
 psql -U your_user -d newsmanagement_db
 ```
 
-4. Create Tables
-Run the createTables.js file
+**4. Create Tables
+Run the createTables.js file**
 ```bash
 npm run dev dist/database/createTables.js
 ```
 
-5. Seed Data
-Run the seedData.js file for seeding data into the newly  created tables.
+**5. Seed Data**
+
+**! IMPORTANT:** In order to run the seedData.js succesfully you MUST run the [Java backend service](https://github.com/evesinger/startsteps-author-service) of the first. You can find more information by clicking on the project.
+
+Once it is running, start the seedData.js file for seeding data into the newly  created tables.
 ```bash
 npm run dev dist/database/seedData.js
 ```
-6. Verify the table creation and seeding vere succesfull
+1. Verify that the table creation and seeding were succesfull
    
 ```bash
 psql -U your_user -d newsmanagement_db \dt
@@ -128,61 +117,85 @@ npm run dev
 
 **Verify API Endpoints**
 ```bash
-curl -X GET http://localhost:5550/authors
+curl -X GET http://localhost:5550/articles
 ```
 
 (Alternativetly, you can use [Postman](https://www.postman.com/) for endpoint testng. )
 
-**Running the Java Microservice:**
-
-Navigate to the Java service directory:
-```bash
-cd author-service
-```
-
-Run the Spring Boot application:
-```bash
-./mvnw spring-boot:run
-```
-
 ### API Endpoints
 
-**Author and Auth Service**
-(Note: use the Java server URL example:localhost:8080)
+Use the following key-value pair in your headers for role based permissions with every request:
 
-POST /auth/register - Register as a new author
+x-author-id: 5
+x-user-role: AUTHOR 
 
-POST /auth/login - Login and retrieve author_id
+OR
 
-PUT /authors/id/update-ontroduction - Authors can update their own intro
+x-auhor-id: 1 
+x-user-role: CHIEF_EDITOR
 
-GET /authors - Fetch all authors 
+#### **Article Related Endpoints**
 
-GET/authod/id - Get author by id 
+**GET /articles**- Fetch all articles 
+- Accessible for Authors and Chief Editors
+- Expected response: 200OK
 
-PUT/author/id - Update an author by id 
+**GET /articles/:id** - Fetch a single article
+- Only Chief Editor have access to any article by id
+- Authors can access only their own articles
+- Expected response: 200OK
 
-DELETE/author/id - Delete an author by id 
+**GET articles/by-author?author_id=XX** - Fetch an article by an author
+- Only Chief Editor access to any article by id
+- Expected response: 200OK
 
-**Content Management Service**
-(Note: use the NodeJS server URL example:localhost:3000)
+**POST /articles** - Create an article
+- Accessible for Authors and Chief Editors
+- Expected response: 201Created
 
-GET /articles - Fetch all articles 
+**PUT /articles/:id**- Update an article
+- Only Chief Editor can update any article by id
+- Authors can update only their own articles
+- Expected response: 200OK
 
-GET /articles/:id - Fetch a single article
+**DELETE /articles/:id** - Delete an article
+- Only Chief Editor can delete any article
+- Authors can delete only their own articles
+- Expected response: 200OK
 
-GET articles/by-author?author_id=XX - Fetch an article by an author
+#### **Topics Related Endpoints**
 
-POST /articles - Create an article
+**GET /topics**- Fetch all topics
+- Accessible for Authors and Chief Editors
+- Expected response: 200OK
 
-PUT /articles/:id - Update an article
+**GET /articles/:id** - Fetch a single topic
+- Only Chief Editor have access to any single topic
+- Expected response: 200OK
 
-DELETE /articles/:id - Delete an article
+**POST /topics** - Create a topic
+- Accessible only for Chief Editors
+- Expected response: 201Created
 
-GET /activity - View all logs (Chief Editors only)
+**DELETE /articles/:id** - Delete a topic
+- Only Chief Editor can delete any article
+- Expected response: 200OK
 
-GET /activity/my-logs - View only the logged-in author's logs
+**PUT /topics/:id/articles/:id** - Link a topic to an article
+- Accessible for Authors and Chief Editors
+- Expected response: 200OK
 
+#### **Activity Related Endpoints**
+
+**GET /activity** - View all activity logs
+- Only Chief Editor can delete any article
+- Expected response: 200OK
+
+**GET /activity/my-logs** - View only the logged-in author's logs
+- Only Authors can access it
+- Expected response: 200OK
+
+In cases of unathorized requests, the response should be 403Forbidden.
 
 ### Running Tests
 
@@ -194,4 +207,23 @@ npm test
 ```
 
 ### Future Enhancements
-TBC
+
+**Decoupling Node.js from Java**:
+- Move Java author data to its own PostgreSQL DB (separate from Node.js).
+- Node.js will sync only necessary author data (to avoid direct dependency).
+- Redis Pub/Sub for real-time updates when authors change.
+
+**Advanced Search & Filtering**
+- Full-text search with PostgreSQL tsvector or Elasticsearch.
+
+**Authentication & Security**
+- implementing JWT authentication 
+- OAuth support (Google, GitHub).
+- Password hashing 
+  
+**Role-Based Access Control (RBAC)**
+-More granular roles (e.g., Senior Editors, Contributors, Moderators).
+
+**CI/CD & Deployment**
+- GitHub Actions for automated testing.
+- Docker & Kubernetes for scalability.

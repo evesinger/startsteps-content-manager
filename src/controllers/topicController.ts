@@ -1,42 +1,78 @@
 import express, { Request, Response } from "express";
-import postgres from "postgres";
-
-const sql = postgres({
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME || "newsmanagement_db",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "postgres",
-});
+import { TopicRepository } from "../repositories/TopicRepository";
+import sql from "../configs/dbconfig";
+import { roleMiddleware } from "../middlewares/roleMiddleware";
 
 const router = express.Router();
 
-// Create a new topic
-router.post("/", async (req: Request, res: Response) => {
-  const { title, description } = req.body;
+interface AuthenticatedRequest extends Request {
+  user?: { authorId: string; role: string };
+}
 
-  if (!title) {
-    return res.status(400).json({ error: "Title is required" });
+/* Create a new topic (Only Chiefs) */
+router.post(
+  "/",
+  roleMiddleware("CHIEF_EDITOR"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { title, description } = req.body;
+    const chiefEditorId = Number(req.user?.authorId);
+
+    console.log("Incoming Request:");
+    console.log("  ➜ Title:", title || "MISSING");
+    console.log("  ➜ Description:", description || "MISSING");
+    console.log("  ➜ Chief Editor ID:", chiefEditorId || "MISSING");
+
+    if (!title) {
+      return res.status(400).json({ error: "Title is required" });
+    }
+    if (!chiefEditorId) {
+      return res.status(400).json({ error: "Invalid chief editor ID" });
+    }
+
+    try {
+      const newTopic = await TopicRepository.create(title, description, chiefEditorId);
+
+      if (newTopic.error) {
+        return res.status(400).json({ error: newTopic.error });
+      }
+
+      console.log("Topic Created:", newTopic);
+
+      await sql`
+        INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+        VALUES (${newTopic.id}, 'Topic', ${chiefEditorId}, 'CREATE', NOW());
+      `;
+
+      res.status(201).json(newTopic);
+    } catch (error: unknown) {
+      console.error("Error creating topic:", error);
+
+      let errorMessage = "Unknown error occurred";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else {
+        try {
+          errorMessage = JSON.stringify(error);
+        } catch {
+          errorMessage = "Unknown error (could not be serialized)";
+        }
+      }
+
+      res.status(500).json({ error: "Failed to create topic", details: errorMessage });
+    }
   }
-
-  try {
-    const result = await sql`
-      INSERT INTO topics (title, description)
-      VALUES (${title}, ${description || null})
-      RETURNING *;
-    `;
-    res.status(201).json(result[0]);
-  } catch (error) {
-    console.error("Error creating topic:", error);
-    res.status(500).json({ error: "Failed to create topic" });
-  }
-});
+);
 
 
-// List all topics
+
+
+/* Get all topics (Authors and Chiefs can view) */
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const topics = await sql`SELECT * FROM topics`;
+    const topics = await TopicRepository.findAll();
     res.status(200).json(topics);
   } catch (error) {
     console.error("Error fetching topics:", error);
@@ -44,56 +80,55 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+/* Update a topic by ID (Only Chiefs) */
+router.put(
+  "/:id",
+  roleMiddleware("CHIEF_EDITOR"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { title, description } = req.body;
+    const chiefEditorId = Number(req.user?.authorId);
 
- //Update a topic by ID
-router.put("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { title, description } = req.body;
-
-  if (!title) {
-    return res.status(400).json({ error: "Title is required" });
-  }
-
-  try {
-    const result = await sql`
-      UPDATE topics
-      SET title = ${title}, description = ${description || null}
-      WHERE id = ${id}
-      RETURNING *;
-    `;
-    if (!result.length) {
-      return res.status(404).json({ error: "Topic not found" });
+    if (!title) {
+      return res.status(400).json({ error: "Title is required" });
     }
-    res.status(200).json(result[0]);
-  } catch (error) {
-    console.error("Error updating topic:", error);
-    res.status(500).json({ error: "Failed to update topic" });
+
+    try {
+      const existingTopic = await TopicRepository.findById(Number(id));
+      if (!existingTopic) {
+        return res.status(404).json({ error: "Topic not found" });
+      }
+
+      const updatedTopic = await TopicRepository.update(Number(id), title, description);
+
+      await sql`
+        INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+        VALUES (${updatedTopic.id}, 'Topic', ${chiefEditorId}, 'UPDATE', NOW());
+      `;
+
+      res.status(200).json(updatedTopic);
+    } catch (error) {
+      console.error("Error updating topic:", error);
+      res.status(500).json({ error: "Failed to update topic" });
+    }
   }
-});
+);
 
-
-// Get a specific topic by ID, including its articles
+/* Get a specific topic by ID (Anyone can view, includes articles) */
 router.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    // Fetch the topic
-    const topic = await sql`SELECT * FROM topics WHERE id = ${id}`;
-    if (!topic.length) {
+    const topic = await TopicRepository.findById(Number(id));
+    if (!topic) {
       return res.status(404).json({ error: "Topic not found" });
     }
 
-    // Fetch articles linked to the topic
-    const articles = await sql`
-      SELECT * 
-      FROM articles 
-      WHERE topic_id = ${id};
-    `;
+    const articles = await TopicRepository.getArticlesForTopic(Number(id));
 
-    // Return the topic along with its articles
     res.status(200).json({
-      ...topic[0],
-      articles, // Include related articles in the response
+      ...topic,
+      articles,
     });
   } catch (error) {
     console.error("Error fetching topic with articles:", error);
@@ -101,55 +136,65 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+/* Delete a topic by ID (Only Chief Editors) */
+router.delete(
+  "/:id",
+  roleMiddleware("CHIEF_EDITOR"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const chiefEditorId = Number(req.user?.authorId);
 
-// Delete a topic by ID
-router.delete("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
+    try {
+      const existingTopic = await TopicRepository.findById(Number(id));
+      if (!existingTopic) {
+        return res.status(404).json({ error: "Topic not found" });
+      }
 
-  try {
-    const result = await sql`DELETE FROM topics WHERE id = ${id} RETURNING *`;
-    if (!result.length) {
-      return res.status(404).json({ error: "Topic not found" });
+      await TopicRepository.softDelete(Number(id));
+
+      await sql`
+        INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+        VALUES (${id}, 'Topic', ${chiefEditorId}, 'DELETE', NOW());
+      `;
+
+      res.status(200).json({ message: "Topic deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting topic:", error);
+      res.status(500).json({ error: "Failed to delete topic" });
     }
-    res.status(200).json({ message: "Topic deleted", topic: result[0] });
-  } catch (error) {
-    console.error("Error deleting topic:", error);
-    res.status(500).json({ error: "Failed to delete topic" });
   }
-});
+);
 
-// Link articles to a topic
-router.put("/:id/articles", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { articleIds } = req.body;
+/* Link articles to a topic (Authors and Chiefs) */
+router.put(
+  "/:id/articles/:articleId",
+  roleMiddleware(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id, articleId } = req.params;
+    const authorId = req.user?.authorId;
 
-  if (!Array.isArray(articleIds) || articleIds.length === 0) {
-    return res.status(400).json({ error: "Article IDs must be provided as a non-empty array" });
-  }
-
-  try {
-    // Check if the topic exists
-    const topic = await sql`SELECT * FROM topics WHERE id = ${id}`;
-    if (!topic.length) {
-      return res.status(404).json({ error: "Topic not found" });
+    if (!authorId) {
+      return res.status(403).json({ error: "Unauthorized: Author ID is missing." });
     }
 
-    // Link each article to the topic by updating the topic_id
-    const queries = articleIds.map((articleId) =>
-      sql`
-        UPDATE articles
-        SET topic_id = ${id}
-        WHERE id = ${articleId};
-      `
-    );
-    await Promise.all(queries);
+    try {
+      const linked = await TopicRepository.linkArticleToTopic(Number(id), Number(articleId), Number(authorId));
 
-    res.status(200).json({ message: "Articles linked to topic successfully" });
-  } catch (error) {
-    console.error("Error linking articles to topic:", error);
-    res.status(500).json({ error: "Failed to link articles to topic" });
+      if (!linked) {
+        return res.status(403).json({ error: "You can only link your own articles to a topic" });
+      }
+
+      await sql`
+        INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+        VALUES (${id}, 'Topic', ${authorId}, 'LINK_ARTICLE', NOW());
+      `;
+
+      res.status(200).json({ message: "Article linked to topic successfully" });
+    } catch (error) {
+      console.error("Error linking article to topic:", error);
+      res.status(500).json({ error: "Failed to link article to topic" });
+    }
   }
-});
-
+);
 
 export default router;

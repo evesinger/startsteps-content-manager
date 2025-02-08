@@ -1,6 +1,7 @@
 import sql from "../configs/dbconfig";
 
 export class ArticleRepository {
+  // Find All Articles
   static async findAll() {
     return await sql`
       SELECT id, title, author_id, text, image, created_at, topic_id, views 
@@ -8,26 +9,39 @@ export class ArticleRepository {
     `;
   }
 
-    // Find Article by ID with Validation
-    static async findById(articleId: number) {
-      console.log("🔍 Fetching article with ID:", articleId);
-    
-      if (!articleId || isNaN(Number(articleId))) {
-        console.error("Invalid article ID:", articleId);
-        throw new Error("Invalid article ID: " + articleId);
-      }
-    
-      const [article] = await sql`
-        SELECT id, title, author_id, text, image, created_at, topic_id, views 
-        FROM articles 
-        WHERE id = ${Number(articleId)}; 
-      `;
-    
-      return article;
+  // Find Article by ID with Validation
+  static async findById(articleId: number) {
+    console.log("Fetching article with ID:", articleId);
+  
+    if (!articleId || isNaN(Number(articleId))) {
+      console.error("Invalid article ID:", articleId);
+      throw new Error("Invalid article ID: " + articleId);
+    }
+  
+    const [article] = await sql`
+      SELECT id, title, author_id, text, image, created_at, topic_id, views 
+      FROM articles 
+      WHERE id = ${Number(articleId)}; 
+    `;
+  
+    return article;
+  }
+
+  // Find Articles by Author ID with Validation
+  static async findByAuthorId(authorId: number) {
+    console.log("Fetching articles for Author ID:", authorId);
+
+    if (!authorId || isNaN(Number(authorId))) {
+      console.error("Invalid author ID:", authorId);
+      throw new Error("Invalid author ID: " + authorId);
     }
 
+    return await sql`
+      SELECT * FROM articles WHERE author_id = ${Number(authorId)};
+    `;
+  }
 
-  // With random views for stats
+  // Create a New Article with Validation
   static async create(
     title: string,
     authorId: number,
@@ -43,18 +57,19 @@ export class ArticleRepository {
     if (!topicId || isNaN(Number(topicId))) {
       throw new Error("Invalid topic ID: " + topicId);
     }
+
     // 0 views initially
     const [newArticle] = await sql`
       INSERT INTO articles (title, author_id, text, image, topic_id, created_at, views)
-      VALUES (${title}, ${authorId}, ${text}, ${image}, ${topicId}, DEFAULT, 0)
+      VALUES (${title}, ${authorId}, ${text}, ${image}, ${topicId}, NOW(), 0)
       RETURNING *;
     `;
-  
-    //update views after 5 seconds to show on demo
+
+    // Update views after 5 seconds for demo
     setTimeout(async () => {
       try {
         const randomViews = Math.floor(Math.random() * (1000 - 50 + 1)) + 50;
-  
+
         await sql`
           UPDATE articles
           SET views = ${randomViews}
@@ -67,12 +82,11 @@ export class ArticleRepository {
         console.error(`Error updating views for article ID: ${newArticle.id}`, error);
       }
     }, 5000);
-  
+
     return newArticle;
   }
-  
-  
 
+  // Update an Article with Validation
   static async update(id: number, data: Record<string, string | number>) {
     console.log("Updating article with ID:", id);
 
@@ -90,7 +104,7 @@ export class ArticleRepository {
 
     const setClause = keys.map((key, index) => `${key} = $${index + 1}`).join(", ");
 
-    values.push(Number(id));
+    values.push(Number(id)); // Convert id to number (to avoid type error)
 
     const query = `
       UPDATE articles
@@ -103,6 +117,7 @@ export class ArticleRepository {
     return updatedArticle;
   }
 
+  // Delete an Article with Validation
   static async delete(id: number) {
     console.log("Deleting article with ID:", id);
 
@@ -110,13 +125,15 @@ export class ArticleRepository {
       console.error("Invalid article ID for delete:", id);
       throw new Error("Invalid article ID: " + id);
     }
-    // First, update deleted_at before deleting
+
+    // first, update deleted_at 
     await sql`
       UPDATE articles 
       SET deleted_at = NOW() 
       WHERE id = ${id};
     `;
-    //Delete
+
+    // then, permanently delete 
     await sql`
       DELETE FROM articles 
       WHERE id = ${id};

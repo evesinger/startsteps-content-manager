@@ -11,7 +11,7 @@ export class Article {
   constructor(id: number, title: string, text: string, views: number, createdAt: Date) {
     this.id = id;
     this.title = title;
-    //this.author = author;
+    //this.author = author_id;
     this.text = text;
     this.views = views
     this.createdAt = createdAt

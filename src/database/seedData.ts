@@ -1,37 +1,48 @@
-import sql from '../configs/dbconfig';
+import sql from "../configs/dbconfig";
 
-//NOTE: Adding this interface else typescript gives me type error for Authors
 interface Author {
   id: number;
   firstName: string;
   lastName: string;
 }
 
-const JAVA_BACKEND_URL = "http://localhost:8080/authors"; // Java backend for fetching authors
-const CHIEF_EDITOR_ID = 2; // Chief Editor ID for seeding
-
+const JAVA_BACKEND_URL = "http://localhost:8080/authors"; // Java backend for authors
+const CHIEF_EDITOR_ID = 2; // for seeding
 
 const seedDatabase = async () => {
   try {
-    console.log('Starting database seeding...');
+    console.log("Starting database seeding...");
 
-    // -> Clearing existing data
-    console.log('Clearing old data...');
+    // Clear existing data
+    console.log("Clearing old data...");
     await sql`TRUNCATE TABLE articles RESTART IDENTITY CASCADE;`;
     await sql`TRUNCATE TABLE topics RESTART IDENTITY CASCADE;`;
     await sql`TRUNCATE TABLE activity_log RESTART IDENTITY CASCADE;`;
-    console.log('Old data cleared.');
+    console.log("Old data cleared.");
 
-    // -> Fetching authors from Java
+    // Fetch authors from Java backend with necessary headers
     console.log("Fetching authors from Java backend...");
-    const authorResponse = await fetch(JAVA_BACKEND_URL);
-    if (!authorResponse.ok) {
-      throw new Error("Failed to fetch authors from Java backend.");
-    }
-    const authors: Author[] = await authorResponse.json();
-    console.log("✅ Fetched authors:", authors);
+    const authorResponse = await fetch(JAVA_BACKEND_URL, {
+      method: "GET",
+      headers: {
+        "x-author-id": "1", 
+        "x-user-role": "CHIEF_EDITOR",
+      }
+    });
 
-    // mapping of author IDs by first & last name
+    if (!authorResponse.ok) {
+      const errorText = await authorResponse.text(); // Get the error response
+      throw new Error(`Failed to fetch authors from Java backend: ${authorResponse.status} ${authorResponse.statusText} - ${errorText}`);
+    }
+
+    const authors: Author[] = await authorResponse.json();
+    console.log("Fetched authors:", authors);
+
+    if (authors.length === 0) {
+      throw new Error("No authors were found! Stopping seeding process.");
+    }
+
+    // Mapping of author IDs by full name
     const authorMap = new Map();
     authors.forEach((author) => {
       const fullName = `${author.firstName.trim()} ${author.lastName.trim()}`;
@@ -39,42 +50,38 @@ const seedDatabase = async () => {
     });
     console.log("Author Map:", authorMap);
 
-    // converting authorMap to array for random selection
+    // Convert to array for random selection
     const authorIds = Array.from(authorMap.values());
 
-    if (authorIds.length === 0) {
-      throw new Error("No authors were found! Stopping seeding process.");
+    // Insert topics with created_by
+    console.log("Seeding topics...");
+    const topics = await sql`
+      INSERT INTO topics (title, description, created_by)
+      VALUES 
+        ('Technology', 'Latest in tech', ${CHIEF_EDITOR_ID}),
+        ('Science', 'New discoveries', ${CHIEF_EDITOR_ID}),
+        ('Sport', 'Sports updates', ${CHIEF_EDITOR_ID}),
+        ('Beauty', 'Fashion & cosmetics', ${CHIEF_EDITOR_ID}),
+        ('Politics', 'World politics', ${CHIEF_EDITOR_ID})
+      RETURNING id, title;
+    `;
+    console.log("Inserted topics:", topics);
+
+    if (topics.length === 0) {
+      throw new Error("No topics were inserted! Stopping seeding process.");
     }
 
-//-> Seeding topics (with created by for CHIEF EDITORS)
-console.log("Seeding topics...");
-const topics = await sql`
-  INSERT INTO topics (title, description, created_by)
-  VALUES 
-    ('Technology', 'Latest in tech', ${CHIEF_EDITOR_ID}),
-    ('Science', 'New discoveries', ${CHIEF_EDITOR_ID}),
-    ('Sport', 'Sports updates', ${CHIEF_EDITOR_ID}),
-    ('Beauty', 'Fashion & cosmetics', ${CHIEF_EDITOR_ID}),
-    ('Politics', 'World politics', ${CHIEF_EDITOR_ID})
-  RETURNING id, title;
-`;
-console.log("Inserted topics:", topics);
+    // Log topic creation in ActivityLog
+    console.log("Logging topic creation in ActivityLog...");
+    for (const topic of topics) {
+      await sql`
+        INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+        VALUES (${topic.id}, 'Topic', ${CHIEF_EDITOR_ID}, 'CREATE', NOW());
+      `;
+    }
+    console.log("ActivityLog updated for topics.");
 
-if (topics.length === 0) {
-  throw new Error("No topics were inserted! Stopping seeding process.");
-}
-
-// logging topic creationin ActivityLog
-console.log("Logging topic creation in ActivityLog...");
-for (const topic of topics) {
-  await sql`
-    INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
-    VALUES (${topic.id}, 'Topic', ${CHIEF_EDITOR_ID}, 'CREATE', NOW());
-  `;
-}
-console.log("✅ ActivityLog updated for topics.");
-
-// -> Article templates + seeding articles (no hardcoded author)
+    // Article templates (so no hardcoded authors)
     const articlesData = [
       { title: "Talking Robots: AI in Futurama", text: "Exploring the latest in AI.", image: "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg", topicTitle: "Technology" },
       { title: "Moonlanding vs UFOs: What NASA Knows", text: "Mars missions update with UFO theories.", image: "https://images.pexels.com/photos/8474990/pexels-photo-8474990.jpeg", topicTitle: "Science" },
@@ -85,9 +92,8 @@ console.log("✅ ActivityLog updated for topics.");
 
     console.log("Seeding articles...");
     for (const article of articlesData) {
-      // Selecting a random author ID from authorIds
+      // Select a random author ID from authorIds
       const authorId = authorIds[Math.floor(Math.random() * authorIds.length)];
-
       const topic = topics.find((t) => t.title === article.topicTitle);
 
       console.log(`Processing article: ${article.title}`);
@@ -104,7 +110,7 @@ console.log("✅ ActivityLog updated for topics.");
         continue;
       }
 
-      // Inserting article
+      // Insert article
       const [newArticle] = await sql`
         INSERT INTO articles (title, author_id, created_by, text, image, topic_id, created_at, views)
         VALUES (${article.title}, ${authorId}, ${CHIEF_EDITOR_ID}, ${article.text}, ${article.image}, ${topic.id}, NOW(), 0)
@@ -112,7 +118,7 @@ console.log("✅ ActivityLog updated for topics.");
       `;
       console.log(`Inserted article: ${newArticle.title} (ID: ${newArticle.id})`);
 
-      // Logging article creation in ActivityLog
+      // Log article creation in ActivityLog
       await sql`
         INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
         VALUES (${newArticle.id}, 'Article', ${newArticle.author_id}, 'CREATE', NOW());
@@ -122,8 +128,24 @@ console.log("✅ ActivityLog updated for topics.");
     console.log("ActivityLog updated for articles.");
     console.log("Database seeding completed successfully.");
     process.exit(0);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error seeding database:", error);
+
+    let errorMessage = "Unknown error occurred";
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    } else {
+      try {
+        errorMessage = JSON.stringify(error);
+      } catch {
+        errorMessage = "Unknown error (could not be serialized)";
+      }
+    }
+
+    console.error("Detailed Error:", errorMessage);
     process.exit(1);
   }
 };
