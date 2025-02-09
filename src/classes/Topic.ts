@@ -1,12 +1,11 @@
 export class Topic {
   id: number;
   title: string;
-  articleIds: number[]; 
+  articleIds: number[];
 
   constructor(id: number, title: string) {
-    this.id = id,
-    this.title = title;
-    this.articleIds = []; 
+    (this.id = id), (this.title = title);
+    this.articleIds = [];
   }
 
   addArticle(articleId: number): void {
@@ -14,7 +13,7 @@ export class Topic {
   }
 
   removeArticle(articleId: number): void {
-    this.articleIds = this.articleIds.filter(id => id !== articleId);
+    this.articleIds = this.articleIds.filter((id) => id !== articleId);
   }
 }
 

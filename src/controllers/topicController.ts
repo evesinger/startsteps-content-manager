@@ -12,7 +12,7 @@ interface AuthenticatedRequest extends Request {
 /* Create a new topic (Only Chiefs) */
 router.post(
   "/",
-  roleMiddleware("CHIEF_EDITOR"),
+  roleMiddleware(["CHIEF_EDITOR"]),
   async (req: AuthenticatedRequest, res: Response) => {
     const { title, description } = req.body;
     const chiefEditorId = Number(req.user?.authorId);
@@ -30,7 +30,11 @@ router.post(
     }
 
     try {
-      const newTopic = await TopicRepository.create(title, description, chiefEditorId);
+      const newTopic = await TopicRepository.create(
+        title,
+        description,
+        chiefEditorId,
+      );
 
       if (newTopic.error) {
         return res.status(400).json({ error: newTopic.error });
@@ -61,13 +65,12 @@ router.post(
         }
       }
 
-      res.status(500).json({ error: "Failed to create topic", details: errorMessage });
+      res
+        .status(500)
+        .json({ error: "Failed to create topic", details: errorMessage });
     }
-  }
+  },
 );
-
-
-
 
 /* Get all topics (Authors and Chiefs can view) */
 router.get("/", async (req: Request, res: Response) => {
@@ -83,7 +86,7 @@ router.get("/", async (req: Request, res: Response) => {
 /* Update a topic by ID (Only Chiefs) */
 router.put(
   "/:id",
-  roleMiddleware("CHIEF_EDITOR"),
+  roleMiddleware(["CHIEF_EDITOR"]),
   async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const { title, description } = req.body;
@@ -99,7 +102,11 @@ router.put(
         return res.status(404).json({ error: "Topic not found" });
       }
 
-      const updatedTopic = await TopicRepository.update(Number(id), title, description);
+      const updatedTopic = await TopicRepository.update(
+        Number(id),
+        title,
+        description,
+      );
 
       await sql`
         INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
@@ -111,7 +118,7 @@ router.put(
       console.error("Error updating topic:", error);
       res.status(500).json({ error: "Failed to update topic" });
     }
-  }
+  },
 );
 
 /* Get a specific topic by ID (Anyone can view, includes articles) */
@@ -139,7 +146,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 /* Delete a topic by ID (Only Chief Editors) */
 router.delete(
   "/:id",
-  roleMiddleware("CHIEF_EDITOR"),
+  roleMiddleware(["CHIEF_EDITOR"]),
   async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const chiefEditorId = Number(req.user?.authorId);
@@ -162,7 +169,7 @@ router.delete(
       console.error("Error deleting topic:", error);
       res.status(500).json({ error: "Failed to delete topic" });
     }
-  }
+  },
 );
 
 /* Link articles to a topic (Authors and Chiefs) */
@@ -174,14 +181,22 @@ router.put(
     const authorId = req.user?.authorId;
 
     if (!authorId) {
-      return res.status(403).json({ error: "Unauthorized: Author ID is missing." });
+      return res
+        .status(403)
+        .json({ error: "Unauthorized: Author ID is missing." });
     }
 
     try {
-      const linked = await TopicRepository.linkArticleToTopic(Number(id), Number(articleId), Number(authorId));
+      const linked = await TopicRepository.linkArticleToTopic(
+        Number(id),
+        Number(articleId),
+        Number(authorId),
+      );
 
       if (!linked) {
-        return res.status(403).json({ error: "You can only link your own articles to a topic" });
+        return res
+          .status(403)
+          .json({ error: "You can only link your own articles to a topic" });
       }
 
       await sql`
@@ -194,7 +209,7 @@ router.put(
       console.error("Error linking article to topic:", error);
       res.status(500).json({ error: "Failed to link article to topic" });
     }
-  }
+  },
 );
 
 export default router;

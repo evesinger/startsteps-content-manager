@@ -4,16 +4,19 @@ import { roleMiddleware } from "../middlewares/roleMiddleware";
 
 const router = Router();
 
-router.get("/", roleMiddleware("CHIEF_EDITOR"), async (req: Request, res: Response) => {
-  try {
-    console.log("Fetching Activity Logs...");
+router.get(
+  "/",
+  roleMiddleware(["CHIEF_EDITOR"]),
+  async (req: Request, res: Response) => {
+    try {
+      console.log("Fetching Activity Logs...");
 
-    const { author_id } = req.query;
+      const { author_id } = req.query;
 
-    let logs;
+      let logs;
 
-    if (author_id) {
-      logs = await sql`
+      if (author_id) {
+        logs = await sql`
         SELECT 
           activity_log.id, 
           activity_log.type, 
@@ -29,9 +32,9 @@ router.get("/", roleMiddleware("CHIEF_EDITOR"), async (req: Request, res: Respon
         ORDER BY activity_log.created_at DESC
         LIMIT 20;
       `;
-      console.log(`Filtering by Author ID: ${author_id}`);
-    } else {
-      logs = await sql`
+        console.log(`Filtering by Author ID: ${author_id}`);
+      } else {
+        logs = await sql`
         SELECT 
           activity_log.id, 
           activity_log.type, 
@@ -46,15 +49,16 @@ router.get("/", roleMiddleware("CHIEF_EDITOR"), async (req: Request, res: Respon
         ORDER BY activity_log.created_at DESC
         LIMIT 20;
       `;
-    }
+      }
 
-    console.log("API Response:", logs);
-    res.status(200).json(logs);
-  } catch (error) {
-    console.error("Error fetching activity logs:", error);
-    res.status(500).json({ error: "Failed to fetch activity logs." });
-  }
-});
+      console.log("API Response:", logs);
+      res.status(200).json(logs);
+    } catch (error) {
+      console.error("Error fetching activity logs:", error);
+      res.status(500).json({ error: "Failed to fetch activity logs." });
+    }
+  },
+);
 
 //AUTHORS only
 router.get("/my-logs", async (req: Request, res: Response) => {
@@ -87,8 +91,5 @@ router.get("/my-logs", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch activity logs" });
   }
 });
-
-
-
 
 export default router;

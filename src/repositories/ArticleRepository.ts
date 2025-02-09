@@ -4,26 +4,32 @@ export class ArticleRepository {
   // Find All Articles
   static async findAll() {
     return await sql`
-      SELECT id, title, author_id, text, image, created_at, topic_id, views 
-      FROM articles;
+      SELECT articles.*, 
+             authors.first_name, 
+             authors.last_name
+      FROM articles
+      LEFT JOIN authors ON articles.author_id = authors.id;
     `;
   }
 
-  // Find Article by ID with Validation
+  // Find Article by ID
   static async findById(articleId: number) {
     console.log("Fetching article with ID:", articleId);
-  
+
     if (!articleId || isNaN(Number(articleId))) {
       console.error("Invalid article ID:", articleId);
       throw new Error("Invalid article ID: " + articleId);
     }
-  
+
     const [article] = await sql`
-      SELECT id, title, author_id, text, image, created_at, topic_id, views 
-      FROM articles 
-      WHERE id = ${Number(articleId)}; 
+      SELECT articles.*, 
+             authors.first_name, 
+             authors.last_name
+      FROM articles
+      LEFT JOIN authors ON articles.author_id = authors.id
+      WHERE articles.id = ${Number(articleId)};
     `;
-  
+
     return article;
   }
 
@@ -47,7 +53,7 @@ export class ArticleRepository {
     authorId: number,
     text: string,
     image: string,
-    topicId: number
+    topicId: number,
   ) {
     console.log("Creating new article:", { title, authorId, topicId });
 
@@ -76,18 +82,31 @@ export class ArticleRepository {
           WHERE id = ${newArticle.id};
         `;
         console.log(
-          `Views updated to ${randomViews} for article ID: ${newArticle.id}`
+          `Views updated to ${randomViews} for article ID: ${newArticle.id}`,
         );
       } catch (error) {
-        console.error(`Error updating views for article ID: ${newArticle.id}`, error);
+        console.error(
+          `Error updating views for article ID: ${newArticle.id}`,
+          error,
+        );
       }
     }, 5000);
+
+    // Log the action in `activity_log`
+    await sql`
+  INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+  VALUES (${newArticle.id}, 'Article', ${authorId}, 'CREATE', NOW());
+`;
 
     return newArticle;
   }
 
   // Update an Article with Validation
-  static async update(id: number, data: Record<string, string | number>) {
+  static async update(
+    id: number,
+    data: Record<string, string | number>,
+    authorId: number,
+  ) {
     console.log("Updating article with ID:", id);
 
     if (!id || isNaN(Number(id))) {
@@ -102,23 +121,31 @@ export class ArticleRepository {
       throw new Error("No fields to update");
     }
 
-    const setClause = keys.map((key, index) => `${key} = $${index + 1}`).join(", ");
-
+    const setClause = keys
+      .map((key, index) => `${key} = $${index + 1}`)
+      .join(", ");
     values.push(Number(id)); // Convert id to number (to avoid type error)
 
     const query = `
-      UPDATE articles
-      SET ${setClause}
-      WHERE id = $${keys.length + 1}
-      RETURNING *;
-    `;
+    UPDATE articles
+    SET ${setClause}
+    WHERE id = $${keys.length + 1}
+    RETURNING *;
+  `;
 
     const [updatedArticle] = await sql.unsafe(query, values);
+
+    // Log the update in `activity_log`
+    await sql`
+    INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+    VALUES (${updatedArticle.id}, 'Article', ${authorId}, 'UPDATE', NOW());
+  `;
+
     return updatedArticle;
   }
 
   // Delete an Article with Validation
-  static async delete(id: number) {
+  static async delete(id: number, authorId: number) {
     console.log("Deleting article with ID:", id);
 
     if (!id || isNaN(Number(id))) {
@@ -126,17 +153,23 @@ export class ArticleRepository {
       throw new Error("Invalid article ID: " + id);
     }
 
-    // first, update deleted_at 
+    // first, update deleted_at (soft delete)
     await sql`
-      UPDATE articles 
-      SET deleted_at = NOW() 
-      WHERE id = ${id};
-    `;
+    UPDATE articles 
+    SET deleted_at = NOW() 
+    WHERE id = ${id};
+  `;
 
-    // then, permanently delete 
+    // Log the deletion in `activity_log`
     await sql`
-      DELETE FROM articles 
-      WHERE id = ${id};
-    `;
+    INSERT INTO activity_log (entity_id, type, author_id, action, created_at)
+    VALUES (${id}, 'Article', ${authorId}, 'DELETE', NOW());
+  `;
+
+    // then, permanently delete
+    await sql`
+    DELETE FROM articles 
+    WHERE id = ${id};
+  `;
   }
 }

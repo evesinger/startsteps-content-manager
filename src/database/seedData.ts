@@ -25,14 +25,16 @@ const seedDatabase = async () => {
     const authorResponse = await fetch(JAVA_BACKEND_URL, {
       method: "GET",
       headers: {
-        "x-author-id": "1", 
+        "x-author-id": "1",
         "x-user-role": "CHIEF_EDITOR",
-      }
+      },
     });
 
     if (!authorResponse.ok) {
       const errorText = await authorResponse.text(); // Get the error response
-      throw new Error(`Failed to fetch authors from Java backend: ${authorResponse.status} ${authorResponse.statusText} - ${errorText}`);
+      throw new Error(
+        `Failed to fetch authors from Java backend: ${authorResponse.status} ${authorResponse.statusText} - ${errorText}`,
+      );
     }
 
     const authors: Author[] = await authorResponse.json();
@@ -81,18 +83,53 @@ const seedDatabase = async () => {
     }
     console.log("ActivityLog updated for topics.");
 
-    // Article templates (so no hardcoded authors)
+    // Article templates (to avoid hardcoded authors)
     const articlesData = [
-      { title: "Talking Robots: AI in Futurama", text: "Exploring the latest in AI.", image: "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg", topicTitle: "Technology" },
-      { title: "Moonlanding vs UFOs: What NASA Knows", text: "Mars missions update with UFO theories.", image: "https://images.pexels.com/photos/8474990/pexels-photo-8474990.jpeg", topicTitle: "Science" },
-      { title: "Messi or Ronaldo: The Eternal Debate", text: "Analyzing football legends.", image: "https://images.pexels.com/photos/2413089/pexels-photo-2413089.jpeg", topicTitle: "Sport" },
-      { title: "The Future of Cosmetics", text: "How technology is transforming beauty.", image: "https://plugins-media.makeupar.com/smb/blog/post/2021-01-28/3ede8f17-1e11-4770-beff-bb029794f560.jpg", topicTitle: "Beauty" },
-      { title: "The Politics of Climate Change", text: "How politics affects climate policies.", image: "https://img.freepik.com/free-photo/climate-change-with-dry-soil_23-2149217819.jpg", topicTitle: "Politics" }
+      {
+        title: "Talking Robots: AI in Futurama",
+        text: "Exploring the latest in AI.",
+        image:
+          "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg",
+        topicTitle: "Technology",
+        views: 324,
+      },
+      {
+        title: "Moonlanding vs UFOs: What NASA Knows",
+        text: "Mars missions update with UFO theories.",
+        image:
+          "https://images.pexels.com/photos/8474990/pexels-photo-8474990.jpeg",
+        topicTitle: "Science",
+        views: 555,
+      },
+      {
+        title: "Messi or Ronaldo: The Eternal Debate",
+        text: "Analyzing football legends.",
+        image:
+          "https://images.pexels.com/photos/2413089/pexels-photo-2413089.jpeg",
+        topicTitle: "Sport",
+        views: 463,
+      },
+      {
+        title: "The Future of Cosmetics",
+        text: "How technology is transforming beauty.",
+        image:
+          "https://plugins-media.makeupar.com/smb/blog/post/2021-01-28/3ede8f17-1e11-4770-beff-bb029794f560.jpg",
+        topicTitle: "Beauty",
+        views: 694,
+      },
+      {
+        title: "The Politics of Climate Change",
+        text: "How politics affects climate policies.",
+        image:
+          "https://img.freepik.com/free-photo/climate-change-with-dry-soil_23-2149217819.jpg",
+        topicTitle: "Politics",
+        views: 1001,
+      },
     ];
 
     console.log("Seeding articles...");
     for (const article of articlesData) {
-      // Select a random author ID from authorIds
+      // Select a random author id
       const authorId = authorIds[Math.floor(Math.random() * authorIds.length)];
       const topic = topics.find((t) => t.title === article.topicTitle);
 
@@ -106,17 +143,22 @@ const seedDatabase = async () => {
       }
 
       if (!topic) {
-        console.error(`Error: No topic_id found for ${article.topicTitle}. Skipping article.`);
+        console.error(
+          `Error: No topic_id found for ${article.topicTitle}. Skipping article.`,
+        );
         continue;
       }
 
-      // Insert article
+      // Insert Articles
       const [newArticle] = await sql`
-        INSERT INTO articles (title, author_id, created_by, text, image, topic_id, created_at, views)
-        VALUES (${article.title}, ${authorId}, ${CHIEF_EDITOR_ID}, ${article.text}, ${article.image}, ${topic.id}, NOW(), 0)
-        RETURNING *;
-      `;
-      console.log(`Inserted article: ${newArticle.title} (ID: ${newArticle.id})`);
+INSERT INTO articles (title, author_id, created_by, text, image, topic_id, created_at, views)
+VALUES (${article.title}, ${authorId}, ${CHIEF_EDITOR_ID}, ${article.text}, ${article.image}, ${topic.id}, NOW(), ${article.views})
+RETURNING *;
+`;
+
+      console.log(
+        `Inserted article: ${newArticle.title} (ID: ${newArticle.id}, Views: ${newArticle.views})`,
+      );
 
       // Log article creation in ActivityLog
       await sql`

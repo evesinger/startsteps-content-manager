@@ -1,50 +1,50 @@
 import sql from "../configs/dbconfig";
 
 export class TopicRepository {
-  
-  static async create(title: string, description: string, chiefEditorId: number) {
-    // Ensure all values are defined (PostgreSQL does not allow `undefined`)
+  static async create(
+    title: string,
+    description: string,
+    chiefEditorId: number,
+  ) {
+    // All values should be defines (Postgreesql does not allow undefined..)
     if (!title) {
       throw new Error("Title is required");
     }
     if (!chiefEditorId) {
       throw new Error("Invalid chief editor ID");
     }
-  
-    // Check if a topic with the same title already exists
+
+    // Check for duplicates
     const existingTopic = await sql`
       SELECT * FROM topics WHERE title = ${title} LIMIT 1;
     `;
-  
+
     if (existingTopic.length > 0) {
       return { error: `A topic with the title "${title}" already exists.` };
     }
-  
-    // ✅ Ensure `description` is `null` instead of `undefined`
+
     const safeDescription = description ?? null;
-  
-    // ✅ Ensure `chiefEditorId` is valid
+
+    // chiefEditorId must be valid
     const safeChiefEditorId = Number(chiefEditorId) || null;
-  
-    // If no duplicate, insert the new topic
+
+    // Insert new topic if no duplicates
     const [newTopic] = await sql`
       INSERT INTO topics (title, description, created_by)
       VALUES (${title}, ${safeDescription}, ${safeChiefEditorId})
       RETURNING *;
     `;
-  
+
     return newTopic;
   }
-  
-  
-  
-  
+
   static async findAll() {
     return await sql`SELECT * FROM topics WHERE deleted_at IS NULL;`;
   }
 
   static async findById(id: number) {
-    const [topic] = await sql`SELECT * FROM topics WHERE id = ${id} AND deleted_at IS NULL;`;
+    const [topic] =
+      await sql`SELECT * FROM topics WHERE id = ${id} AND deleted_at IS NULL;`;
     return topic;
   }
 
@@ -68,7 +68,11 @@ export class TopicRepository {
     `;
   }
 
-  static async linkArticleToTopic(topicId: number, articleId: number, authorId: number) {
+  static async linkArticleToTopic(
+    topicId: number,
+    articleId: number,
+    authorId: number,
+  ) {
     const [article] = await sql`
       SELECT id FROM articles WHERE id = ${articleId} AND author_id = ${authorId};
     `;
