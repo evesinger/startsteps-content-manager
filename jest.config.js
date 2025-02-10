@@ -7,4 +7,3 @@ module.exports = {
       '^.+\\.tsx?$': 'ts-jest', // Use ts-jest for TypeScript files
     },
   };
-  

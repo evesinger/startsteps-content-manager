@@ -1,144 +1,249 @@
+# News Portal Management System
 
-News Portal Management System
-=============================
+## Overview
 
-This is a **RESTful News Portal Management System** that supports basic operations for managing topics and articles. 
-The system is built using **Node.js** **TypeScript** and **Express**, and it allows users to perform CRUD operations on topics and articles.
+This is project is part of a RESTful **News Management System** that supports operations for managing topics, articles, authors, and activity logs.
 
-You can find the full Task Decription [here.](task.md)
+This project is the **Content Management Service**, which is built by NodeJS, Typescript and ExpressJS.
 
+### Features:
 
+- Role based management of Topics (CRUD)
 
-## Features:
+- Role based management of Articles (CRUD)
+- Role based Activity Log of all actions on the platform
+- Analytics dashboard
+- Search controller
 
-*   Create, delete, list, and show topics
-    
-*   Create, delete, list, and show articles
-    
-*   Fetch all articles from a topic
-    
-*   Fetch the latest 10 articles from any topic (created within the last hour)
-    
+### User Roles:
 
-## Requirements:
+Differrent user have different accesses to content management:
 
-*   **Node.js/Express.js** 
+- **Chief Editors:**
+  Full access to manage articles, topics, and view analytics.
+  Can see all activities in the activity log.
+  Can view all analytics.
+  <br>
 
-*   **TypeScript** 
-  
-*   **npm**  for package management
-    
+- **Authors**:
+  Limited access to manage only their own articles and view their own activity-log.
 
-## Installation:
+### Requirements:
 
-1. **Clone the git repo**
+- **Node.js/Express.js** (Backend API for topics, articles and activity)
+
+- **TypeScript** (Type safety and better development experience)
+
+- **PostgreSQL** (Database for persistent storage)
+
+- **JEST** (for unit testing)
+
+### Installation:
+
+#### Clone the git repo
+
 ```bash
 clone cd news-portal-management-system
 ```
-    
-2. **Install Dependencies**
+
+#### Install Dependencies
 
 ```bash
 npm install
 ```
-3. **Install TypeScript**
+
+#### Install TypeScript
 
 ```bash
 npm install -g typescript
-
 ```
 
-4. **Compile TypeScript to JavaScript**
+#### Compile TypeScript to JavaScript
+
 ```bash
 tsc
 ```
-NOTE: this command can be renamed in the package.json file, under "scripts".
 
-    
+#### Setting up the Local Database:
 
-## Build & Run the Project:
-
-1.  **Create an .env File** : To use environment variables for database configuration or port, create a .env file and add variables like PORT.
-
-&nbsp;
-    
-2.   **Start the code** 
-``` bash 
-npm start
-```
-This will start the server on http://localhost:3000 (or the port defined in the .env).
-
-&nbsp;
-
-3. **Verify the project is running**
-
-To verify the app is running, open your browser or use a tool like Postman and navigate to:
-``` bash 
-GET http://localhost:3000/
-```
-Your Response should be: 
-``` bash 
-Welcome!
-```
-
-## Usage Example (Optional)
-
-You can add one example endpoint to test the API further.
-
-**1. Creating a New Topic**
-
-Method: POST /topics
-
-Body:
-```json
-{
-  "title": "Technology"
-}
-```
-
-Response:
-```json
-{
-  "id": 1,
-  "title": "Technology",
-  "articleIds": []
-}
-```
-## Running Tests
-
-To ensure the application runs as expected, we have implemented comprehensive test coverage. Follow these steps to run the tests:
-
-- Install dependencies (if not already installed):
+**1. Start PostgreSQL**
 
 ```bash
-npm install
+pg_ctl -D /usr/local/var/postgres start
 ```
 
-- Run the tests:
+**2. Connect to the Database**
 
-``` bash
+```bash
+psql -U your_user -d newsmanagement_db
+```
+
+**4. Create Tables
+Run the createTables.js file**
+
+```bash
+npm run dev dist/database/createTables.js
+```
+
+**5. Seed Data**
+
+**! IMPORTANT:** In order to run the seedData.js succesfully you MUST run the [Java backend service](https://github.com/evesinger/startsteps-author-service) of the first. You can find more information by clicking on the project.
+
+Once it is running, start the seedData.js file for seeding data into the newly created tables.
+
+```bash
+npm run dev dist/database/seedData.js
+```
+
+1. Verify that the table creation and seeding were succesfull
+
+```bash
+psql -U your_user -d newsmanagement_db \dt
+```
+
+### Build & Run the Project:
+
+**Create an .env File\***
+
+```bash
+DATABASE_URL=postgres://your_user:your_password@localhost:5432/newsmanagement_db
+PORT=5550
+```
+
+**Start the NODEJS Backend Server**
+
+```bash
+npm run dev
+```
+
+**Verify API Endpoints**
+
+```bash
+curl -X GET http://localhost:5550/articles
+```
+
+(Alternativetly, you can use [Postman](https://www.postman.com/) for endpoint testng. )
+
+### API Endpoints
+
+Use the following key-value pair in your headers for role based permissions with every request:
+
+x-author-id: 5
+x-user-role: AUTHOR
+
+OR
+
+x-auhor-id: 1
+x-user-role: CHIEF_EDITOR
+
+#### **Article Related Endpoints**
+
+**GET /articles**- Fetch all articles
+
+- Accessible for Authors and Chief Editors
+- Expected response: 200OK
+
+**GET /articles/:id** - Fetch a single article
+
+- Only Chief Editor have access to any article by id
+- Authors can access only their own articles
+- Expected response: 200OK
+
+**GET articles/by-author?author_id=XX** - Fetch an article by an author
+
+- Only Chief Editor access to any article by id
+- Expected response: 200OK
+
+**POST /articles** - Create an article
+
+- Accessible for Authors and Chief Editors
+- Expected response: 201Created
+
+**PUT /articles/:id**- Update an article
+
+- Only Chief Editor can update any article by id
+- Authors can update only their own articles
+- Expected response: 200OK
+
+**DELETE /articles/:id** - Delete an article
+
+- Only Chief Editor can delete any article
+- Authors can delete only their own articles
+- Expected response: 200OK
+
+#### **Topics Related Endpoints**
+
+**GET /topics**- Fetch all topics
+
+- Accessible for Authors and Chief Editors
+- Expected response: 200OK
+
+**GET /articles/:id** - Fetch a single topic
+
+- Only Chief Editor have access to any single topic
+- Expected response: 200OK
+
+**POST /topics** - Create a topic
+
+- Accessible only for Chief Editors
+- Expected response: 201Created
+
+**DELETE /articles/:id** - Delete a topic
+
+- Only Chief Editor can delete any article
+- Expected response: 200OK
+
+**PUT /topics/:id/articles/:id** - Link a topic to an article
+
+- Accessible for Authors and Chief Editors
+- Expected response: 200OK
+
+#### **Activity Related Endpoints**
+
+**GET /activity** - View all activity logs
+
+- Only Chief Editor can delete any article
+- Expected response: 200OK
+
+**GET /activity/my-logs** - View only the logged-in author's logs
+
+- Only Authors can access it
+- Expected response: 200OK
+
+In cases of unathorized requests, the response should be 403Forbidden.
+
+### Running Tests
+
+1. Install dependencies (if not already installed):
+
+2. Run the tests:
+
+```bash
 npm test
-``` 
-
-
-This command will execute all tests defined in the tests folder using the configured test runner (e.g., Jest or Mocha). Ensure that all necessary dependencies are installed before running the tests.
-
-## Folder Structure:
-```bash
-news-portal-management-system/
-│
-├── src/
-│   ├── index.ts                # Main server entry point
-│   ├── topicController.ts      # Topic routes and logic
-│   ├── articleController.ts    # Article routes and logic
-│   ├── dummyDataBase.ts        # Mocked in-memory database
-│   └── Article.ts              # Article Class
-│
-├── test/
-│   └── topic.test.ts           # Unit tests for topic operations
-│
-├── package.json                # Project dependencies and scripts
-├── README.md                   # Project documentation
-└── .env                        # Environment variables
 ```
 
+### Future Enhancements
+
+**Decoupling Node.js from Java**:
+
+- Move Java author data to its own PostgreSQL DB (separate from Node.js).
+- Node.js will sync only necessary author data (to avoid direct dependency).
+- Redis Pub/Sub for real-time updates when authors change.
+
+**Advanced Search & Filtering**
+
+- Full-text search with PostgreSQL tsvector or Elasticsearch.
+
+**Authentication & Security**
+
+- implementing JWT authentication
+- OAuth support (Google, GitHub).
+- Password hashing
+
+**Role-Based Access Control (RBAC)**
+-More granular roles (e.g., Senior Editors, Contributors, Moderators).
+
+**CI/CD & Deployment**
+
+- GitHub Actions for automated testing.
+- Docker & Kubernetes for scalability.
